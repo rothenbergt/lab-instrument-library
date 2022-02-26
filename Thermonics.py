@@ -38,7 +38,7 @@ class Thermonics:
         self.instrumentID = None
         self.makeConnection(instrumentAddress)
 
-
+    # TODO, add ability to choose temperature system from __init__
     def makeConnection(self, instrumentAddress : str) -> None:
         '''
         Attempts to establish a connection with a given instrument
