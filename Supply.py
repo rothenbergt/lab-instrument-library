@@ -15,34 +15,7 @@ import numpy as np
 #TODO add multiple supplies like DC Supply
 
 # Class which allows for easier access to the GPIB TEK Oscilloscope
-class Supply:
-
-    # When initializing the object, make the connection
-    def __init__(self, givenInstrument = "GPIB0::23::INSTR"):
-        self.instrument = givenInstrument
-        self.rm = pyvisa.ResourceManager()
-        self.connected = False
-        self.connection = ""
-        self.instrumentID = ""
-        self.debug = False
-        self.makeConnection(givenInstrument)
-        self.disableOutput()
-
-    # Make the GPIB connection & set up the instrument
-    def makeConnection(self, givenInstrument):
-        try:
-            # Make the connection
-            self.connection = self.rm.open_resource(givenInstrument)
-            # print("Connection Made")
-            self.connected = True
-            self.connection.timeout = 2500                        # Increase Timeout
-            self.instrumentID = self.connection.query("*IDN?")[:-1]
-            print("Successfully established " + self.instrument + " connection with", self.instrumentID)
-            
-        except:
-            print("Failed to make the connection with ", self.instrument)
-            self.connected = False
-            quit()
+class Supply(LibraryTemplate):
 
     def write(self, message):
         self.connection.write(message)
@@ -74,10 +47,8 @@ class Supply:
     def reset(self):
         self.connection.write("*RST")
     
-    
     def select_25(self):
         self.connection.write("INST:SEL P25V")
-    
     
     def getCalibrationFactor(self, referenceVoltage):
         
@@ -87,7 +58,6 @@ class Supply:
         time.sleep(0.5)        
         
         measuredVoltage = self.getCurrentVoltage()
-        print("The DMM is off by " + str(measuredVoltage - referenceVoltage))
         return measuredVoltage - referenceVoltage
 
 
