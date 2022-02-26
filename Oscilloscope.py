@@ -22,35 +22,7 @@ import time
 from PIL import Image, ImageColor, ImageDraw
 
 # Class which allows for easier access to the GPIB TEK Oscilloscope
-class Oscilloscope:
-
-    # When initializing the object, make the connection
-    def __init__(self, givenInstrument="USB0::0x0699::0x0456::C013314::INSTR", use=""):
-        self.instrument = givenInstrument
-        self.rm = pyvisa.ResourceManager()
-        self.connected = False
-        self.connection = ""
-        self.instrumentID = ""
-        self.scopeUse = use
-        self.makeConnection(givenInstrument)
-
-    # Make the GPIB connection & set up the instrument
-    def makeConnection(self, givenInstrument):
-        try:
-            # Make the connection
-            self.connection = self.rm.open_resource(givenInstrument)
-            # print("Connection Made")
-            self.connected = True
-            self.connection.timeout = 250000                       # TODO might need to increase for *OPC
-            self.instrumentID = self.connection.query("*IDN?")[:-1]
-            print("Successfully established " + self.instrument + " connection with", self.instrumentID)
-        except Exception as ex:
-            print("Failed to make the connection with " + self.instrument + " EXITING...")
-            self.connected = False
-            quit()
-
-    def setScopeUse(self, use):
-        self.scopeUse = use
+class Oscilloscope(LibraryTemplate):
 
     # Set the state of the Oscilloscope to STOP or RUN
     def setState(self, command="STOP"):
@@ -61,6 +33,7 @@ class Oscilloscope:
 
     def stop(self):
         self.connection.write("ACQuire:STATE STOP")
+
 
     def saveSetup(self, filename="TempSetup"):
         self.connection.write('SAVe:SETUp \"F:/' + filename + '.set\"')
@@ -108,10 +81,6 @@ class Oscilloscope:
 
     def getCurrentMessage(self):
         return self.connection.query("MESSage:SHOW?")
-
-    # TODO Why do we have this? I need to rewrite the current sensor script to remove this
-    def setMessageBoxLocation(self):
-        self.connection.write("MESSage:BOX 610, 600, 950, 645")
 
     def showMessage(self, message, x1="610", y1="600", x2="950", y2="645"):
         # print("MESSage:BOX " + x1 + ", " + y1 + ", "+ x2 + ", "+ y2)
@@ -210,8 +179,6 @@ class Oscilloscope:
     # |SIGMA1|SIGMA2|SIGMA3|STDdev|TOVershoot|WAVEFORMS}
     def setMeasurementType(self, measurement):
         self.connection.write('MEASUREMENT:IMMED:TYPE ' + str(measurement))
-        # print("\nThe measurement type is now: " + self.connection.query('MEASUrement:IMMed:TYPe?')[:-1])
-        # print("The units is: " + self.connection.query("MEASUrement:IMMed:UNIts?"))
 
     # Set the measurement source CH1|CH2|CH3|CH4|MATH
     def setMeasurementSource(self, source):
@@ -238,12 +205,10 @@ class Oscilloscope:
 
         self.connection.write("ACQuire:NUMAVg " + str(acquistions))
 
-        # print("The number of aquire averages is now " + self.connection.query('ACQuire:NUMAVg?')[:-1])
 
     # SAMple|PEAKdetect|HIRes|AVErage|ENVelope
     def setAquireMode(self, acquireMode):
         self.connection.write("ACQuire:MODe " + str(acquireMode))
-        # print("\nThe aquire mode is now: " + self.connection.query('ACQuire:MODe?')[:-1])
 
     def setTriggerLevel(self, value):
         self.connection.write(f"TRIGger:A:LEVel {value}")
@@ -390,144 +355,7 @@ class Oscilloscope:
 
         window.close()
 
-    # Clean up the connection when we are finished with it
-    def closeConnection(self):
-        self.connection.close()
 
-    def close(self):
-        self.connection.close()
         
-scope = Oscilloscope("USB0::0x0699::0x0456::C013314::INSTR")
 
 
-# def setLogicLabel(self, channel, label):
-
-scope.setLogicLabel(0, "MOSI")
-scope.setLogicLabel(1, "SPI_CS")
-scope.setLogicLabel(2, "MISO")
-scope.setLogicLabel(3, "CLK")
-
-scope.setLogicLabel(4, "BUSY")
-scope.setLogicLabel(5, "SDO")
-scope.setLogicLabel(6, "CS")
-
-
-
-# scope = Oscilloscope("USB0::0x0699::0x0456::C013314::INSTR")
-
-# scope = Oscilloscope("TCPIP0::132.158.220.45::INSTR")
-
-##### scope = Oscilloscope("USB0::0x0699::0x0456::C013315::INSTR")
-
-# scope = Oscilloscope("TCPIP0::132.158.220.35::INSTR")
-# scope.messageBoxTool()
-
-scope.setChannelLabel(1, "V_IN")
-scope.setChannelLabel(2, "HI")
-scope.setChannelLabel(4, "LO")
-scope.setChannelLabel(3, "V_OUT (ac coupled)")
-
-# scope.setChannelLabel(4, "Current")
-# scope.changeGraticule("SOLID")
-
-# scope.setChannelLabel(4, "Single-Ended RAA788000")
-# scope.setChannelLabel(2, "OPA2376")
-# scope.setChannelLabel(3, "RAA788000")
-# scope.setChannelLabel(1, "Trigger Signal")
-
-
-# scope.setChannelLabel(4, "I_LOAD")
-# scope.setChannelLabel(2, "Threshold Voltage")
-
-# scope.setChannelLabel(1, "Pulse Generator")
-# scope.setChannelLabel(2, "V_IN (ac coupled)")
-# scope.setChannelLabel(3, "V_OUT (ac coupled)")
-# scope.setChannelLabel(4, "I_LOAD")
-
-
-
-# # Get the Rise Time
-# scope.setMeasurementType("RISe")
-# scope.setMeasurementSource("CH3")
-# riseTime = scope.getMeasurement()
-
-# scope.setMeasurementType("FALL")
-# scope.setMeasurementSource("CH3")
-# fallTime = scope.getMeasurement()
-
-# scope.setMeasurementType("MINImum")
-# scope.setMeasurementSource("CH3")
-# minimum = scope.getMeasurement()
-
-# scope.setMeasurementType("MAXimum")
-# scope.setMeasurementSource("CH3")
-# maximum  = float(scope.getMeasurement()[0])
-
-# v0 = (0.9 * maximum) - (0.1 * maximum) 
-# slewRate = v0 / float(riseTime[0])
-
-# fallingSlewRate = v0 / float(fallTime[0])
-
-# print(f"The minimum is {minimum}")
-# print(f"The maximum is {maximum}")
-# print(f"The 90% is {v0}")
-
-
-# print(f"The rising slew rate is {round(slewRate/1000/1000, 2)} mA/ns")
-# print(f"The falling slew rate is {round(fallingSlewRate/1000/1000, 2)} mA/ns")
-
-# startAmp = 0
-# endAmp = 50
-
-
-# message = f"Part = Richtek RT9069, Details = 36V 2uA IQ Peak 200mA LDO, Package = SOT-23-5, , \
-# Test: Load Transient, \
-# I_LOAD = {startAmp}mA -> {endAmp}mA, \
-# V_IN = 14V V_OUT = 12V, \
-# C_IN = 1uF C_OUT = 1uF, , \
-# Rising Slew = {round(slewRate/1000, 2)} mA/us, \
-# Falling Slew = {round(fallingSlewRate/1000, 2)} mA/us"
-
-# # message = message.replace('\n', ',')
-# # message = message.replace('|', '')
-# message = message.replace(', ', '\n')
-
-# scope.show_message(message)
-
-# scope.saveImage(f"10A_POT.png")
-
-# scope.removeMessage()
-
-message = f"Part = Richtek RT9069, Details = 36V 2uA IQ 200mA LDO, Package = SOT-23-5, , \
-Test: Line Transient, \
-V_IN = 6V -> 30V, V_OUT = 5V, \
-I_LOAD = 100mA (RL = 50Ohm), \
-C_IN = 1uF C_OUT = 1uF"
-
-message = message.replace('\n', ',')
-message = message.replace('|', '')
-message = message.replace(', ', '\n')
-
-scope.show_message(message)
-scope.removeMessage()
-
-
-message = f"RAA214250 (10V) Start-Up Time, \
-(VIN=12.00V VEN=5.00V VOUT=10.00V IOUT=0.500A T=25C, \
-CIN=4.7uF Wire 1uF COUT=4x22uF CFF=0uF RL=0 ohms, \
-From VEN to 90% VOUT"
-
-message = message.replace('\n', ',')
-message = message.replace('|', '')
-message = message.replace(', ', '\n')
-
-# scope.show_message(message)
-
-scope.setChannelLabel(1, "V_IN")
-scope.setChannelLabel(2, "V_OUT")
-scope.setChannelLabel(4, "I_IN")
-scope.setChannelLabel(3, "PWM")
-
-scope.changeGraticule("FULL")
-
-# scope.saveImage(f"Juan3.png")

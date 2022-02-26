@@ -11,39 +11,8 @@ import pyvisa, sys, pandas, math
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
 
-class NetworkAnalyzer:
+class NetworkAnalyzer(LibraryTemplate):
 
-    # Inititalize with the instrument name & resource manager
-    def __init__(self, givenInstrument = 'GPIB0::22::INSTR'):
-        self.instrument = givenInstrument
-        self.rm = pyvisa.ResourceManager()
-        self.connected = False
-        self.connection = ""
-        self.instrumentID = ""
-        self.makeConnection(givenInstrument)
-
-    # Make the GPIB connection & set up the instrument
-    def makeConnection(self, givenInstrument):
-        try:
-            # Make the connection
-            self.connection = self.rm.open_resource(givenInstrument)
-            self.connected = True
-            self.connection.timeout = 25000000                        # Increase Timeout
-            self.instrumentID = self.connection.query("*IDN?")[:-1]
-            print("Successfully established " + self.instrument + " connection with", self.instrumentID)
-        except:
-            print("Failed to make the connection with ", self.instrument)
-            self.connected = False
-
-    
-    # Close the connection with the instrument
-    def closeConnection(self):
-        self.connection.close()
-        self.connected = False
-
-    # Get the instrument Name and Serial Number
-    def getInstrumentID(self):
-        return self.instrumentID
 
     # Set the power level of channel 1
     def setPower(self, newPowerLevel):
@@ -301,17 +270,3 @@ class NetworkAnalyzer:
         window.close()
     
 
-
-na = NetworkAnalyzer()
-
-# na.clearAllMarkers()
-# na.displayMarkerTable()
-
-# na.finddBTarget(db = 57, marker = 1, activeTrace = 1)
-# na.findPhaseTarget(degree = -45, marker = 2, activeTrace = 2)
-# na.findPhaseTarget(degree = -90, marker = 3, activeTrace = 2)
-# na.finddBTarget(db = 0, marker = 4, activeTrace = 1)
-# na.findPhaseTarget(degree = -180, marker = 5, activeTrace = 2)
-
-# na.saveImage("G=1000, CL=0F, -45dBm (2)")
-na.saveTraceDataToCSV("temp2")
