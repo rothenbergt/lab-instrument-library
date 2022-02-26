@@ -12,6 +12,8 @@ import sys
 import time
 import numpy as np
 
+#TODO add multiple supplies like DC Supply
+
 # Class which allows for easier access to the GPIB TEK Oscilloscope
 class Supply:
 
@@ -77,7 +79,6 @@ class Supply:
         self.connection.write("INST:SEL P25V")
     
     
-    
     def getCalibrationFactor(self, referenceVoltage):
         
         self.setVoltage(referenceVoltage)
@@ -89,4 +90,29 @@ class Supply:
         print("The DMM is off by " + str(measuredVoltage - referenceVoltage))
         return measuredVoltage - referenceVoltage
 
+
+#     ____
+#    / __ \___  ____  ___  _________ ______
+#   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
+#  / _, _/  __/ / / /  __(__  ) /_/ (__  )
+# /_/ |_|\___/_/ /_/\___/____/\__,_/____/
+# ----------------------------------------
+
+
+# from LibraryTemplate import LibraryTemplate
+# from typing import List
+# import inspect
+
+# class E3649A(LibraryTemplate):
+    
+#     def getVoltage(self):
+#         retval = self.connection.query(f"MEASure:VOLTage:DC?")
+#         return float(retval)
+
+#     def getCurrent(self):
+#         retval = self.connection.query(f"MEASure:CURRent:DC?")
+#         return float(retval)
+
+#     def setVoltage(self, voltage):
+#         self.connection.write(f"VOLT {voltage}")
 

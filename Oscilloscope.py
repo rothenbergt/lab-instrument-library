@@ -34,7 +34,6 @@ class Oscilloscope(LibraryTemplate):
     def stop(self):
         self.connection.write("ACQuire:STATE STOP")
 
-
     def saveSetup(self, filename="TempSetup"):
         self.connection.write('SAVe:SETUp \"F:/' + filename + '.set\"')
 

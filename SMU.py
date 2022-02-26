@@ -3,6 +3,9 @@ import numpy as np
 import time
 import sys
 
+# TODO, change to query_as_ascii
+# TODO, change to camel case NOT snake case
+
 class SMU(LibraryTemplate):
     
     OVERFLOW = 9.223372e+18
@@ -372,78 +375,3 @@ class SMU(LibraryTemplate):
     def setTriggerPeriod(self, period):
         self.connection.write(f":TRIG:TIM {period}")
 
-
-# mALoads = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
-
-# s = SMU("GPIB0::28::INSTR")
-
-# # Set channel 1 to be a current source
-# s.set_mode_current_limit(channel = 1, mode = "CURR", current = 0, limit = 10)
-
-# # Set channel 1 to pulse
-# s.turnOnPulse()
-
-# # Pulse width should be long enough that the part is fully regulating
-# s.setPulseWidth(width = 10E-3)
-# s.setPulsePeak(peak = 50E-3)
-
-# # Set channel 2 to be the supply voltage 
-# s.set_mode_voltage_limit(channel = 2, mode = "VOLT", voltage = 5, limit = 200E-3)
-
-# # Measure Delay on both channels should be half the pulse width? Or at least where we are regulating
-# s.setMeasureDelay(channel = 1, value = 5E-3)
-# s.setMeasureDelay(channel = 2, value = 5E-3)
-
-# s.ch1_on()
-# s.ch2_on()
-
-# # Set channel 2 measure speed to long, get quiescent current with no load.
-# s.set_NPLC(channel = 2, NPLC = 100)
-
-# quiescentCurrentnoLoad = s.get_voltage_current_both_channels()[-1]
-
-# # Set channel 2 measure speed to short (0.01), get quiescent current with pulsed load
-# s.set_NPLC(channel = 2, NPLC = 0.01)
-
-# s.trigger()
-
-# quiescentCurrentLoad = s.readBothChannel()[1]
-
-# print(f"Quiescent Current no Load: {quiescentCurrentnoLoad * 1E6} uA")
-# print(f"Quiescent Current Load: {quiescentCurrentLoad * 1E3} mA")
-
-
-# for load in mALoads:
-#     s.setPulsePeak(peak = load*1E-3)
-#     time.sleep(5)
-
-#     # Set channel 2 measure speed to short (0.01), get quiescent current with pulsed load
-#     s.set_NPLC(channel = 2, NPLC = 0.01)
-
-#     quiescentCurrentLoad = s.readBothChannel()[1]
-
-#     print(f"Quiescent Current Load {load}mA: {quiescentCurrentLoad * 1E3} mA")
-
-
-
-# s.setPulseWidth(11E-3)
-
-
-
-# s.get_screen_image()
-# s.get_voltage_array()
-# s.write("SOURCE:CURRENT:TRANSIENT:SPEED FAST")
-# s.turn_on_4_wire()
-# s.check_for_errors(True)
-# s.set_current_sens_range(1)
-# s.set_voltage_source_range(200)
-
-# s2 = SMU("GPIB0::6::INSTR")
-# s2.turn_on_high_capacitance_mode(2)
-
-# s2.check_for_errors()
-
-# time.sleep(5)
-# s2.turn_off_high_capacitance_mode(2)
-
-# s2.check_for_errors()

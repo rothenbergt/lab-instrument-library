@@ -5,10 +5,6 @@ import sys
 
 class AFG3000(LibraryTemplate):
     
-    def helloWolrd(self) -> None:
-        
-        print("Hello, World")
-        
     
     def setFunction(self, function = "SINusoid", channel = 1) -> None:
         """
