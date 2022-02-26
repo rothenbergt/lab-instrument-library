@@ -12,7 +12,6 @@ import inspect
 
 class E3649A(LibraryTemplate):
     
-
     def getVoltage(self):
         retval = self.connection.query(f"MEASure:VOLTage:DC?")
         return float(retval)
@@ -24,7 +23,3 @@ class E3649A(LibraryTemplate):
     def setVoltage(self, voltage):
         self.connection.write(f"VOLT {voltage}")
 
-# s = E3649A("GPIB::05::INSTR")
-# print(s.getCurrent())
-
-# s.setVoltage(5)
