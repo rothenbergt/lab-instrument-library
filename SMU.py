@@ -10,10 +10,6 @@ class SMU(LibraryTemplate):
     
     OVERFLOW = 9.223372e+18
     
-    def reset(self):
-        self.connection.write("*RST")
-        self.connection.write("*CLS")
-    
     def ch_on(self, channel = 1):
         self.connection.write(f"OUTP{channel} ON")
     def ch1_on(self):
@@ -342,20 +338,7 @@ class SMU(LibraryTemplate):
         
         
     def trigger(self):
-        # self.connection.write(":TRIG:ACQ:SOUR AINT")
-        # self.connection.write(":TRIG2:ACQ:SOUR AINT")
         self.connection.write(":TRIG:ACQ (@1,2)")
-
-        # self.connection.write(":TRIG:ACQ:SOUR BUS")
-        # self.connection.write(":TRIG2:ACQ:SOUR BUS")
-
-        # time.sleep(0.2)
-
-        # print("sending trigger")
-
-        # self.connection.write("*TRG")
-
-
 
     def set_measure_count(self, amount, channel = 1):
         self.connection.write(f":TRIG{channel}:COUN {amount}")
