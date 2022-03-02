@@ -46,10 +46,10 @@ class Thermonics:
         self.connection = None
         self.instrument_name = None
         self.instrumentID = None
-        self.makeConnection(instrumentAddress)
+        self.make_connection(instrumentAddress)
 
     # TODO, add ability to choose temperature system from __init__
-    def makeConnection(self, instrumentAddress : str) -> None:
+    def make_connection(self, instrumentAddress : str) -> None:
         '''
         Attempts to establish a connection with a given instrument
         '''
@@ -108,16 +108,16 @@ class Thermonics:
             print(f"Setting Thermonics Temperature to: {temp}")
             
             if (float(temp) <= 25):
-                self.setColdTemp(temp)
-                self.selectCold()
+                self.set_cold_temp(temp)
+                self.select_cold()
             else:
-                self.setHotTemp(temp)
-                self.selectHot()
+                self.set_hot_temp(temp)
+                self.select_hot()
         elif "X-Stream" in self.instrument_name:
             print("A set_temperature method has not been written for the X-Stream 4300")
 
 
-    def selectCold(self) -> None:
+    def select_cold(self) -> None:
         '''
         Selects cold air on the temperature forcing system
         '''
@@ -130,7 +130,7 @@ class Thermonics:
             print("Whoops! You cannot select cold on the Oven through code.")
 
         
-    def selectHot(self) -> None:
+    def select_hot(self) -> None:
         '''
         Selects hot air on the temperature forcing system
         '''
@@ -143,7 +143,7 @@ class Thermonics:
             print("Whoops! You cannot select hot on the Oven through code.")
         
     
-    def selectAmbient(self) -> None:
+    def select_ambient(self) -> None:
         '''
         Selects ambient air on the temperature forcing system
         '''
@@ -155,7 +155,7 @@ class Thermonics:
         elif "Oven" in self.instrument_name:
             print("Whoops! You cannot select ambient on the Oven through code.")   
         
-    def selectAmbientForced(self) -> None:
+    def select_ambient_forced(self) -> None:
         '''
         Selects ambient forced air on the temperature forcing system
         '''
@@ -168,7 +168,7 @@ class Thermonics:
             print("Whoops! You cannot select ambient forced on the Oven through code.")   
             
             
-    def setHotTemp(self, temp : float) -> None:
+    def set_hot_temp(self, temp : float) -> None:
         '''
         Set the temperature of the hot air
         '''
@@ -180,7 +180,7 @@ class Thermonics:
             self.connection.write(f"{temp}C") 
 
 
-    def setColdTemp(self, temp : float) -> None:
+    def set_cold_temp(self, temp : float) -> None:
         '''
         Set the temperature of the cold air
         '''   
@@ -192,7 +192,7 @@ class Thermonics:
             self.connection.write(f"{temp}C")  
         
 
-    def turnOffCompressor(self) -> None:
+    def turn_off_compressor(self) -> None:
         '''
         Turn off the compressor 
         '''   
@@ -204,7 +204,7 @@ class Thermonics:
         elif "Oven" in self.instrument_name:
             print("The Oven has no compressor to turn off.")
         
-    def turnOnCompressor(self) -> None:
+    def turn_on_compressor(self) -> None:
         '''
         Turn on the compressor 
         '''   
@@ -216,7 +216,7 @@ class Thermonics:
         elif "Oven" in self.instrument_name:
             print("The Oven has no compressor to turn off.")
 
-    def getTemperature(self) -> float:
+    def get_temperature(self) -> float:
         '''
         Get the current temperature of the temperature forcing system
         '''    
@@ -232,7 +232,7 @@ class Thermonics:
             
         return float(retval)          
 
-    def turnOffAir(self):
+    def turn_off_air(self):
         '''
         Turn the forced air off
         '''    
