@@ -1,10 +1,21 @@
-#     ____
-#    / __ \___  ____  ___  _________ ______
-#   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
-#  / _, _/  __/ / / /  __(__  ) /_/ (__  )
-# /_/ |_|\___/_/ /_/\___/____/\__,_/____/
-# ----------------------------------------
-#              Power Supply Library
+"""  ____
+    / __ \___  ____  ___  _________ ______
+   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
+  / _, _/  __/ / / /  __(__  ) /_/ (__  )
+ /_/ |_|\___/_/ /_/\___/____/\__,_/____/
+ ----------------------------------------
+A one line summary of the module or program, terminated by a period.
+
+Leave one blank line.  The rest of this docstring should contain an
+overall description of the module or program.  Optionally, it may also
+contain a brief description of exported classes and functions and/or usage
+examples.
+
+  Typical usage example:
+
+  foo = ClassFoo()
+  bar = foo.FunctionBar()
+"""
 
 import pyvisa
 import sys
@@ -13,6 +24,16 @@ import numpy as np
 import inspect
 
 class Supply():
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
+
 
     supplyDictionary = {
         "1": "E3631A",
@@ -21,7 +42,7 @@ class Supply():
     }
     
     def __init__(self, instrument_address = "GPIB0::20::INSTR", nickname = None, identify = True):
-        
+        """Inits SampleClass with blah."""
         self.instrument_address = instrument_address
         self.rm = pyvisa.ResourceManager()
         self.connection = None

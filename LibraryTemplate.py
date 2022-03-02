@@ -1,13 +1,21 @@
-'''
-    File name: LibraryTemplate.py
-    Author: Tyler Rothenberg
-    Date created: 4/28/2021
-    Date last modified: 6/11/2021
-    Python Version: 3.9
-    
-    The purpose of this template is to organize all common instruments
-    commands into one template which new libraries may inherit from.
-'''
+"""  ____
+    / __ \___  ____  ___  _________ ______
+   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
+  / _, _/  __/ / / /  __(__  ) /_/ (__  )
+ /_/ |_|\___/_/ /_/\___/____/\__,_/____/
+ ----------------------------------------
+A one line summary of the module or program, terminated by a period.
+
+Leave one blank line.  The rest of this docstring should contain an
+overall description of the module or program.  Optionally, it may also
+contain a brief description of exported classes and functions and/or usage
+examples.
+
+  Typical usage example:
+
+  foo = ClassFoo()
+  bar = foo.FunctionBar()
+"""
 
 import pyvisa
 

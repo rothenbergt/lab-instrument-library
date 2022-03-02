@@ -1,11 +1,21 @@
-#     ____                                 
-#    / __ \___  ____  ___  _________ ______
-#   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
-#  / _, _/  __/ / / /  __(__  ) /_/ (__  ) 
-# /_/ |_|\___/_/ /_/\___/____/\__,_/____/  
-# ----------------------------------------
-#        Network Analyzer Library                                         
-#      Agilent Technologies E5061B
+"""  ____
+    / __ \___  ____  ___  _________ ______
+   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
+  / _, _/  __/ / / /  __(__  ) /_/ (__  )
+ /_/ |_|\___/_/ /_/\___/____/\__,_/____/
+ ----------------------------------------
+A one line summary of the module or program, terminated by a period.
+
+Leave one blank line.  The rest of this docstring should contain an
+overall description of the module or program.  Optionally, it may also
+contain a brief description of exported classes and functions and/or usage
+examples.
+
+  Typical usage example:
+
+  foo = ClassFoo()
+  bar = foo.FunctionBar()
+"""
 
 import pyvisa, sys, pandas, math
 import PySimpleGUI as sg
