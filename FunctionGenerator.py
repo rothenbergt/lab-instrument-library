@@ -7,13 +7,25 @@ import inspect
 
 class AFG3000(LibraryTemplate):
     
-    def set_function(self, function = "SINusoid", channel = 1) -> None:
+    def set_function(self, function = "SINusoid", source = 1) -> None:
         """
         param function: SINusoid|SQUare|PULSe|RAMP|PRNoise|DC
         """
-        self.connection.write()
+
+        self.connection.write(f"SOURCE{source}:FUNCTION:SHAPE {function}")
     
     def get_function(self, source):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Excep: If the query fails.
+        """
         print(self.connection.query(f"SOURCE{source}:FUNCTION:SHAPE?"))
 
     def get_amplitude(self, source: int) -> float:
@@ -149,6 +161,8 @@ class AFG3000(LibraryTemplate):
 
 arb = AFG3000("GPIB0::11::INSTR")
 
+arb.set_function("SIN")
+
 # frequency_measured = arb.set_frequency(1, 6E3)
 
 # print(frequency_measured)
@@ -158,8 +172,10 @@ arb = AFG3000("GPIB0::11::INSTR")
 # arb.set_leading_edge(1, "15ns")
 # arb.set_trailing_edge(1, "15ns")
 
-print(arb.set_amplitude(1, 0.25))
+# print(arb.set_amplitude(1, 0.25))
 
-print(arb.get_function(1))
+# print(arb.get_function(1))
 
 arb.check_for_errors()
+
+print()
