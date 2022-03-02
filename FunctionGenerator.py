@@ -17,12 +17,12 @@ examples.
   bar = foo.FunctionBar()
 """
 
-from LibraryTemplate import LibraryTemplate
-import numpy as np
 import time
 import sys
-from typing import Union
 import inspect
+import numpy as np
+from typing import Union
+from LibraryTemplate import LibraryTemplate
 
 # AFG3052C
 
@@ -32,7 +32,6 @@ class AFG3000(LibraryTemplate):
         """
         param function: SINusoid|SQUare|PULSe|RAMP|PRNoise|DC
         """
-
         self.connection.write(f"SOURCE{source}:FUNCTION:SHAPE {function}")
     
     def get_function(self, source):
@@ -158,17 +157,17 @@ class AFG3000(LibraryTemplate):
         self.connection.write(f"SOURce{source}:PULSE:DCYCle {duty}")
 
 
-    def setBurstMode(self, channel = 1, cycles = 1) -> None:
+    def set_burst_mode(self, channel = 1, cycles = 1) -> None:
         
         self.connection.write(f"SOURce1:BURSt:STATe ON")
         self.connection.write(f"SOURce1:BURSt:MODE TRIGgered")
         self.connection.write(f"SOURce1:BURSt:NCYCles {cycles}")
     
-    def setLowVoltage(self, voltage = 0, channel = 1) -> None:
+    def set_low_voltage(self, voltage = 0, channel = 1) -> None:
         self.connection.write(f"SOURce{channel}:VOLTage:LEVel:IMMediate:LOW {voltage}V")
     
     
-    def setHighVoltage(self, voltage = 5, channel = 1) -> None:
+    def set_high_voltage(self, voltage = 5, channel = 1) -> None:
         self.connection.write(f"SOURce{channel}:VOLTage:LEVel:IMMediate:HIGH {voltage}V")
     
     def trigger(self):
@@ -180,23 +179,4 @@ class AFG3000(LibraryTemplate):
         '''
         print(self.connection.query("SYSTem:ERROR?"))
 
-arb = AFG3000("GPIB0::11::INSTR")
-
-arb.set_function("SIN")
-
-# frequency_measured = arb.set_frequency(1, 6E3)
-
-# print(frequency_measured)
-
-# arb.set_period(1, 1E-3)
-# arb.set_duty_cycle(1, 5)
-# arb.set_leading_edge(1, "15ns")
-# arb.set_trailing_edge(1, "15ns")
-
-# print(arb.set_amplitude(1, 0.25))
-
-# print(arb.get_function(1))
-
-arb.check_for_errors()
-
-print()
+# arb = AFG3000("GPIB0::11::INSTR")

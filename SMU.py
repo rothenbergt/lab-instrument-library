@@ -23,10 +23,17 @@ import time
 import sys
 
 # TODO, change to query_as_ascii
-# TODO, change to camel case NOT snake case
 
 class SMU(LibraryTemplate):
-    
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """    
     OVERFLOW = 9.223372e+18
     
     def ch_on(self, channel = 1):

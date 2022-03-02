@@ -20,32 +20,31 @@ examples.
 import pyvisa, sys, pandas, math
 import PySimpleGUI as sg
 import matplotlib.pyplot as plt
+from LibraryTemplate import LibraryTemplate
 
 class NetworkAnalyzer(LibraryTemplate):
 
-
     # Set the power level of channel 1
-    def setPower(self, newPowerLevel):
-        self.connection.write(":SOUR1:POW " + str(newPowerLevel))
+    def set_power(self, newPowerLevel):
+        self.connection.write(f":SOUR1:POW " + str(newPowerLevel))
 
-    def getPower(self):
+    def get_power(self):
         return round(float(self.connection.query(":SOUR1:POW?")),2)
 
-    def turnBackLightOn(self):
+    def turn_on_backlight(self):
         self.connection.write(":SYST:BACK ON")
 
-    def clearAllMarkers(self):
+    def clear_all_markers(self):
         self.connection.write(":CALC1:MARK:AOFF")
 
-    def displayMarkerTable(self, display = "ON"):
+    def display_marker_table(self, display = "ON"):
         self.connection.write(":DISP:TABL " + str(display))
 
-    def setLogSweep(self):
+    def set_log_sweep(self):
         self.connection.write(":SENS1:SWE:TYPE LOG")
 
-    # Save a screenshot
     # TODO Save in a specific location
-    def saveImage(self, pictureName = "temp", scale = "NO"):
+    def save_image(self, pictureName = "temp", scale = "NO"):
         # Turn the back Light On
         self.turnBackLightOn()
         
@@ -77,73 +76,73 @@ class NetworkAnalyzer(LibraryTemplate):
         f.close()                                           # Close the file
 
     # Change the current active trace
-    def changeActiveTrace(self, trace):
+    def change_active_trace(self, trace):
         self.connection.write(":CALC:PAR" + str(trace) + ":SEL")
 
     # Add a title to the current window
-    def setTitle(self, title):
+    def set_title(self, title):
         self.connection.write(":DISP:WIND1:TITL:DATA \"""{}\"".format(title))
         self.connection.write(":DISP:WIND1:TITL ON")
 
-    def getStartFrequency(self):
+    def get_start_frequency(self):
         return float(self.connection.query(":SENS1:FREQ:STAR?"))
 
-    def getStopFrequency(self):
+    def get_stop_frequency(self):
         return float(self.connection.query(":SENS1:FREQ:STOP?"))
 
-    def turnOffRAttenuator(self):
+    def turn_off_R_attenuator(self):
         self.connection.write("INP:ATT:GPP:R 0")
 
-    def turnOnRAttenuator(self):
+    def turn_on_R_attenuator(self):
         self.connection.write("INP:ATT:GPP:R 20")
 
-    def turnOffTAttenuator(self):
+    def turn_off_T_attenuator(self):
         self.connection.write("INP:ATT:GPP:T 0")
 
-    def turnOnTAttenuator(self):
+    def turn_on_T_attenuator(self):
         self.connection.write("INP:ATT:GPP:T 20")
 
     # Get current frequency data
-    def getFrequencyData(self):
+    def get_frequency_data(self):
         return self.connection.query_ascii_values("SENS1:FREQ:DATA?")
 
     # Get current active trace data
-    def getData(self):
+    def get_data(self):
         return self.connection.query_ascii_values("CALC:DATA:FDAT?")[::2]
 
-    def getDataAsDataFrame(self):
+    def get_data_as_dataframe(self):
         # Grab all of the dB data from the first trace on the network analyzer
         # We skip every other entry we are given bunk data
-        data = self.getData()
+        data = self.get_data()
 
         # Get the frequency at which we have tested the data points at
-        frequencyData = self.getFrequencyData()
+        frequency_data = self.get_frequency_data()
 
         # Zip the data together so each frequency has a dB
-        zippedData = zip(frequencyData, data)
+        zipped_data = zip(frequency_data, data)
 
         # Get the type of data PHAS DB
-        dataTile = self.connection.query(":CALC:FORM?")[:-1]
+        data_tile = self.connection.query(":CALC:FORM?")[:-1]
 
         # Turn the zipped data into a dataframe with columns
-        df = pandas.DataFrame(zippedData, columns = ['Frequency', dataTile])
+        df = pandas.DataFrame(zipped_data, columns = ['Frequency', data_tile])
 
         return df
 
     # Save the current trace data as a CSV file
-    def saveTraceDataToCSV(self, fileName = "temp"):
+    def save_trace_CSV(self, fileName = "temp"):
         # Get the data as a DataFrame
         df = self.getDataAsDataFrame()
         # Save the data as a csv
         df.to_csv(fileName + ".csv", index = False)
 
     # Wait for the Standard Event Status Register to show operation Completed
-    def waitForOPC(self):
+    def wait_for_OPC(self):
         self.connection.write("*OPC?")          # Ensure the instrument has completed all opreations
         self.connection.read()                  # Wait for a response from the network analyzer
 
     # Automatically find the -3dB point given a graph
-    def find3dB(self, marker = 1, searchStart = 20, activeTrace = 1):
+    def find_3dB(self, marker = 1, searchStart = 20, activeTrace = 1):
         
         # Set the active trace to the one with MLOG
         self.changeActiveTrace(activeTrace)
@@ -162,7 +161,7 @@ class NetworkAnalyzer(LibraryTemplate):
         self.connection.write("CALC:SEL:MARK" + str(marker) + ":FUNC:TARG -3")
         self.connection.write("CALC:MARK" + str(marker) + ":FUNC:EXEC")
 
-    def findPhaseTarget(self, degree = -45, marker = 2, activeTrace = 2):
+    def find_phase_target(self, degree = -45, marker = 2, activeTrace = 2):
 
         # Set the active trace to the one with Phase
         self.changeActiveTrace(activeTrace)
@@ -179,7 +178,7 @@ class NetworkAnalyzer(LibraryTemplate):
         self.connection.write("CALC:SEL:MARK" + str(marker) + ":FUNC:TARG " + str(degree))
         self.connection.write("CALC:MARK" + str(marker) + ":FUNC:EXEC")      
 
-    def finddBTarget(self, db = 57, marker = 2, activeTrace = 2):
+    def find_dB_target(self, db = 57, marker = 2, activeTrace = 2):
 
         # Set the active trace to the one with Phase
         self.changeActiveTrace(activeTrace)
@@ -197,7 +196,7 @@ class NetworkAnalyzer(LibraryTemplate):
         self.connection.write("CALC:MARK" + str(marker) + ":FUNC:EXEC")   
 
     # Trigger a single run of the network analyzer
-    def triggerSingleRun(self):
+    def trigger_single_run(self):
         self.connection.write(":INIT1:CONT ON") # Turn on continous mode
         self.connection.write(":TRIG:SOUR BUS") # Set the trigger source to be the bus
         self.connection.write(":TRIG:SING")     # Trigger a single run
@@ -206,47 +205,47 @@ class NetworkAnalyzer(LibraryTemplate):
         self.waitForOPC()
 
     # Save the current state to the state folder
-    def saveCurrentState(self, stateName = "tempSavedState"):
+    def save_current_state(self, stateName = "tempSavedState"):
         self.connection.write(":MMEM:STOR \"D:\\State\\" + stateName + ".sta\"")
 
     # Set the starting frequency
-    def setStartFrequency(self, start):
+    def set_start_frequency(self, start):
         # self.connection.write(":SENS1:BWID " + str(start))         # Change the bandwidth resolution
         self.connection.write(":SENS1:FREQ:STAR " + str(start))    # to be the same as the starting frequency  
 
     # Set the starting frequency
-    def setStopFrequency(self, stop):
+    def set_stop_frequency(self, stop):
         self.connection.write(":SENS1:FREQ:STOP " + str(start))    # to be the same as the starting frequency 
 
-    def changeIFbandwidth(self, onOrOff = 1):
+    def change_IF_bandwidth(self, onOrOff = 1):
         self.connection.write(":SENS1:BWA " + str(onOrOff))
 
     # Set the stopping frequency
-    def setStopFrequency(self, stop):
+    def set_stop_frequency(self, stop):
         self.connection.write(":SENS1:FREQ:STOP " + str(stop))
 
     # Invert the display depending on its current state
-    def invertDisplay(self):
+    def invert_display(self):
         self.connection.write(":DISP:IMAG INV")
 
     # Return the display to have a black background
-    def setNormalDisplay(self):
+    def set_normal_display(self):
         self.connection.write(":DISP:IMAG NORM")
 
     # Set the current active trace to measure trace
-    def setActiveTraceToPhase(self):
+    def set_active_trace_to_phase(self):
         self.connection.write(":CALC:FORM PHAS")
 
     # Set the current active trace to measure Magnitude Log
-    def setActiveTraceToLogDb(self):
+    def set_active_trace_to_logdB(self):
         self.connection.write(":CALC:FORM MLOG")
 
-    def getMarkerXandY(self, marker):
+    def get_marker_X_and_Y(self, marker):
         x = float(self.connection.query(":CALC:SEL:MARK" + str(marker) + ":X?"))
         return str(x)
 
     # Allow the user to select a state file saved on the machine
-    def selectStateFile(self):
+    def select_state_file(self):
         # Get all files in the state folder
         allStates = self.connection.query(":MMEM:CAT? \"D:\\State\"").split(",")
         # Remove anything that isn't a state file
