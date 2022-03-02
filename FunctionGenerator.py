@@ -7,7 +7,7 @@ import inspect
 
 class AFG3000(LibraryTemplate):
     
-    def set_function(self, function = "SINusoid", source = 1) -> None:
+    def set_function(self, function: float = "SINusoid", source: int = 1) -> None:
         """
         param function: SINusoid|SQUare|PULSe|RAMP|PRNoise|DC
         """
@@ -24,7 +24,7 @@ class AFG3000(LibraryTemplate):
         The current selected function.
 
         Raises:
-        Excep: If the query fails.
+        Except: If the query fails.
         """
         print(self.connection.query(f"SOURCE{source}:FUNCTION:SHAPE?"))
 
