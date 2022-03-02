@@ -274,6 +274,9 @@ class Supply():
 
 
     def check_for_errors(self) -> bool:
+        '''
+        Pull an error from the error buffer
+        '''
         print(self.connection.query("SYSTem:ERROR?"))
 
     def reset(self):
@@ -295,34 +298,8 @@ class Supply():
         return self.connection.query(message)
 
 
-E3632A = Supply("GPIB0::2::INSTR")
-E3649A = Supply("GPIB0::5::INSTR")
-E3631A = Supply("GPIB::6::INSTR")
+# E3632A = Supply("GPIB0::2::INSTR")
+# E3649A = Supply("GPIB0::5::INSTR")
+# E3631A = Supply("GPIB::6::INSTR")
 
-# E3632A.set_range("LOW")
-# E3649A.set_range("LOW")
-
-print(E3631A.get_voltage_range())
-E3632A.get_voltage_range()
-E3649A.get_voltage_range()
-
-E3631A.select_output2()
-
-
-E3631A.set_voltage(4, 1)
-E3631A.enable_output()
-
-print(E3631A.measure_voltage())
-print(E3649A.measure_voltage())
-print(E3632A.measure_voltage())
-
-print(E3631A.measure_current())
-print(E3649A.measure_current())
-print(E3632A.measure_current())
-
-E3631A.check_for_errors()
-E3649A.check_for_errors()
-E3632A.check_for_errors()
-# supply1.set_voltage(4, 1)
-# E3649A.set_voltage(4, 1)
 
