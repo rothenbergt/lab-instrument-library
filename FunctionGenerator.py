@@ -3,25 +3,64 @@ import numpy as np
 import time
 import sys
 from typing import Union
+import inspect
 
 class AFG3000(LibraryTemplate):
     
-    def setFunction(self, function = "SINusoid", channel = 1) -> None:
+    def set_function(self, function = "SINusoid", channel = 1) -> None:
         """
         param function: SINusoid|SQUare|PULSe|RAMP|PRNoise|DC
         """
-        self.connection.write(f"SOURCE{channel}:FUNCTION:SHAPE {function}")
+        self.connection.write()
     
+    def get_function(self, source):
+        print(self.connection.query(f"SOURCE{source}:FUNCTION:SHAPE?"))
+
+    def get_amplitude(self, source: int) -> float:
+        retval = sys.maxsize
+
+        try:
+            retval = self.connection.query(f"SOURce{source}:VOLTage:LEVel:IMMediate:AMPLitude?")
+            return float(retval)
+        except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
+            return retval
+
     
+    def set_amplitude(self, source: int, amplitude: float) -> float:
+        retval = sys.maxsize
+
+        try:
+            self.connection.write(f"SOURce{source}:VOLTage:LEVel:IMMediate:AMPLitude {amplitude}")
+            retval = self.get_amplitude(source)
+            return float(retval)
+        except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
+            return retval
+
+
+    def get_frequency(self, source: int) -> float:
+
+        retval = sys.maxsize
+
+        try:
+            retval = self.connection.query(f"SOURce{source}:FREQUENCY?")
+            return float(retval)
+        except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
+            return retval
+
+
     def set_frequency(self, source: int, frequency: int) -> float:
 
         retval = sys.maxsize
 
         try:
             self.connection.write(f"SOURce{source}:FREQUENCY {frequency}")
-            retval = self.connection.query(f"SOURce{source}:FREQUENCY?")
+            retval = self.get_frequency(source)
             return float(retval)
         except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
             return retval
   
     def set_period(self, source: int, period: int) -> bool:
@@ -37,6 +76,7 @@ class AFG3000(LibraryTemplate):
             retval =  self.connection.query(f"SOURce{source}:PULSe:TRANsition:LEADing?")
             return retval
         except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
             return retval
 
     def get_trailing_edge(self, source:int) -> float:
@@ -47,6 +87,7 @@ class AFG3000(LibraryTemplate):
             retval =  self.connection.query(f"SOURce{source}:PULSe:TRANsition:TRAiling?")
             return retval
         except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
             return retval
 
 
@@ -61,6 +102,7 @@ class AFG3000(LibraryTemplate):
             retval =  self.get_leading_edge(source)
             return retval
         except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
             return retval
 
     def set_trailing_edge(self, source: int, value: str) -> float:
@@ -74,6 +116,7 @@ class AFG3000(LibraryTemplate):
             retval =  self.get_trailing_edge(source)
             return retval
         except:
+            print(f"Device {self.instrumentID} failed in {inspect.currentframe().f_code.co_name}")
             return retval
 
 
@@ -106,12 +149,17 @@ class AFG3000(LibraryTemplate):
 
 arb = AFG3000("GPIB0::11::INSTR")
 
-frequency_measured = arb.set_frequency(1, 6E3)
+# frequency_measured = arb.set_frequency(1, 6E3)
 
-arb.set_period(1, 1E-3)
-arb.set_duty_cycle(1, 5)
-arb.set_leading_edge(1, "15ns")
-arb.set_trailing_edge(1, "15ns")
+# print(frequency_measured)
 
+# arb.set_period(1, 1E-3)
+# arb.set_duty_cycle(1, 5)
+# arb.set_leading_edge(1, "15ns")
+# arb.set_trailing_edge(1, "15ns")
+
+print(arb.set_amplitude(1, 0.25))
+
+print(arb.get_function(1))
 
 arb.check_for_errors()
