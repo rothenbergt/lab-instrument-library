@@ -343,18 +343,18 @@ class SMU(LibraryTemplate):
     def set_measure_count(self, amount, channel = 1):
         self.connection.write(f":TRIG{channel}:COUN {amount}")
 
-    def turnOnPulse(self, channel = 1):
+    def turn_on_pulse(self, channel = 1):
         self.connection.write(f"SOUR{channel}:FUNC PULS")
 
-    def setPulsePeak(self, channel = 1, function = "CURR", peak = 0):
+    def set_pulse_peak(self, channel = 1, function = "CURR", peak = 0):
         self.connection.write(f"SOUR{channel}:{function}:TRIG {peak}")
 
-    def setPulseWidth(self, width):
+    def set_pulse_width(self, width):
         self.connection.write(f"SOURce:PULSe:WIDTh {width}")
 
-    def setMeasureDelay(self, channel = 1, value = 0):
+    def set_measure_delay(self, channel = 1, value = 0):
         self.connection.write(f":TRIG{channel}:ACQ:DEL {value}")
 
-    def setTriggerPeriod(self, period):
+    def set_trigger_period(self, period):
         self.connection.write(f":TRIG:TIM {period}")
 

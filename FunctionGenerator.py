@@ -5,6 +5,8 @@ import sys
 from typing import Union
 import inspect
 
+# AFG3052C
+
 class AFG3000(LibraryTemplate):
     
     def set_function(self, function: float = "SINusoid", source: int = 1) -> None:

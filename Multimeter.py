@@ -14,7 +14,57 @@ import sys
 
 # Note to self. I was playing around with error handling within the library.
 
-class Keithly(LibraryTemplate):
+class Multimeter():
+
+    supplyDictionary = {
+        "1": "E3631A",
+        "2": "E3632A",
+        "3": "E3649A",
+    }
+    
+    def __init__(self, instrument_address = "GPIB0::20::INSTR", nickname = None, identify = True):
+        
+        self.instrument_address = instrument_address
+        self.rm = pyvisa.ResourceManager()
+        self.connection = None
+        self.instrumentID = None
+        self.nickname = nickname
+        self.make_connection(instrument_address, identify)    
+
+    # Make the GPIB connection & set up the instrument
+    def make_connection(self, instrument_address, identify):
+        '''
+        Identifies the instrument
+        '''
+        # Make the connection
+        try:
+            # Make the connection and store it
+            self.connection = self.rm.open_resource(instrument_address)
+            
+            # Increase the timeout
+            # self.connection.timeout = 5000          
+            
+            # Display that the connection has been made
+            if identify == True:              
+                self.identify()
+                print(f"Successfully established {self.instrument_address} connection with {self.instrumentID}")
+            else:
+                print(f"Successfully established {self.instrument_address} connection with {self.nickname}")
+        
+        except:
+            print(f"Failed to establish {self.instrument_address} connection.")
+            
+
+    def identify(self):
+        '''
+        Identifies the instrument
+        '''
+        try:
+            self.instrumentID = self.connection.query("*IDN?")[:-1]
+        except:
+            print("Unit could not by identified using *IDN? command")
+
+
 
     # Turn on the average feature of the multimeter and set the variables
     def set_average(self, function = "VOLTage:AC", control = "MOVing", count = 100):
