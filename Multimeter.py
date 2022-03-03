@@ -27,15 +27,13 @@ import pyvisa
 
 
 
-
-
-
 class Multimeter():
 
     supplyDictionary = {
         "1": "2000",
         "2": "2110",
         "3": "4050",
+        "4": "34401A",
     }
     
     def __init__(self, instrument_address = "GPIB0::20::INSTR", nickname = None, identify = True):
@@ -99,6 +97,10 @@ class Multimeter():
             elif "4050" in self.instrumentID:
                 self.connection.write("INIT")
                 return True
+
+            elif "34401A":
+                self.connection.write("INIT")
+                return True
             else:
                 print(f"Device {self.instrumentID} not in library")
         
@@ -127,9 +129,12 @@ class Multimeter():
             elif "4050" in self.instrumentID:
                 retval = float(self.connection.query("FETCh?"))
                 return retval
-
+            elif "34401A":
+                retval = float(self.connection.query("FETCh?"))
+                return retval
             else:
                 print(f"Device {self.instrumentID} not in library")
+                return retval
         
         except ValueError as ex:
             # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
@@ -152,7 +157,6 @@ class Multimeter():
             print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
         return retval
 
-        
 
     def measure_voltage(self, function = "VOLTage:DC"):
         
@@ -168,19 +172,116 @@ class Multimeter():
             print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
         return retval
 
+    def get_function(self):
 
-    # def load_errors(self):
-    #     # Load errors into memory
+        try:
+            current_function = self.connection.query("FUNCtion?")
+            return current_function
+        except:
+            print(f"General Exception from meter: {self.instrumentID} at {self.instrument}")
+
+    def set_function(self, function: str):
+        '''
+        VOLTage:AC"
+        "VOLTage[:DC]"
+        "VOLTage[:DC]:RATio"
+        "CURRent:AC"
+        "CURRent[:DC]"
+        "FREQuency[:VOLT]"
+        "FREQuency:CURR"
+        "FRESistance"
+        "PERiod[:VOLT]"
+        "PERiod:CURR"
+        "RESistance"
+        "DIODe"
+        "TCOuple"
+        "TEMPerature"
+        "CONTinuity"
+        Note: DIODe and
+        '''
+        self.connection.write(f":conf:{function}")
+
+        return self.get_function()
+
+    def get_range(self):
+        '''
+        Specify signal level in volts 
+        '''
+        retval = sys.maxsize 
+        
+        try:
+            if "2000" in self.instrumentID:
+
+                # Path to configure measurement range:
+                # Select range (0 to 1010).
+                retval = self.connection.query("VOLTage:DC:RANGe?")
+                return float(retval)
+
+            elif "2110" in self.instrumentID:
+                retval = self.connection.query("VOLTage:DC:RANGe?")
+                return float(retval)
+
+            elif "4050" in self.instrumentID:
+                retval = self.connection.query("VOLTage:DC:RANGe?")
+                return float(retval)
+            elif "34401A":
+                retval = self.connection.query("VOLTage:DC:RANGe?")
+                return float(retval)
+            else:
+                print(f"Device {self.instrumentID} not in library")
+                return retval
+        
+        except ValueError as ex:
+            # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+            return retval
+        except Exception as ex:
+            # print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+            return retval      
+
+
+    def set_range(self, voltage_range: float):
+        '''
+        Specify signal level in volts 
+        '''
+        retval = sys.maxsize 
+        
+        try:
+            if "2000" in self.instrumentID:
+
+                # Path to configure measurement range:
+                # Select range (0 to 1010).
+                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+
+            elif "2110" in self.instrumentID:
+                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+
+            elif "4050" in self.instrumentID:
+                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+
+            elif "34401A":
+                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+
+            else:
+                print(f"Device {self.instrumentID} not in library")
+                return retval
+        
+        except ValueError as ex:
+            # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+            return retval
+        except Exception as ex:
+            # print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+            return retval
+
 
     def get_error(self):
         try:
             # Get the error code from the multimeter
-            error_code = int(multi.query("SYSTem:ERRor?")[:-1])
+            error_string = self.connection.query("SYSTem:ERRor?").strip("\n")
             # If the error code is 0, we have no errors
-            
             # If the error code is anything other than 0, we have errors
             
             # Attempt to lookup the errors from the dictionary
+            return error_string
             
         except ValueError as ex:
             print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")        
@@ -188,21 +289,44 @@ class Multimeter():
             print(f"General Exception from meter: {self.instrumentID} at {self.instrument}")
 
 
-        
 # TODO :init:cont off for 2000
 
 mult_2000 = Multimeter("GPIB0::3::INSTR")
 mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
-mult_4050 = Multimeter("GPIB0::1::INSTR")
+mult_4050 = Multimeter("GPIB0::2::INSTR")
+mult_34401A = Multimeter("GPIB0::1::INSTR")
 
 # mult_2000.initiate()
 # mult_2110.initiate()
 # mult_4050.initiate()
+# mult_34401A.initiate()
 
-print(mult_2000.measure_voltage())
-print(mult_2110.measure_voltage())
-print(mult_4050.measure_voltage())
+# print(mult_2000.fetch_voltage())
+# print(mult_2110.fetch_voltage())
+# print(mult_4050.fetch_voltage())
+# print(mult_34401A.fetch_voltage())
 
+print(mult_2000.set_function('volt:dc'))
+print(mult_2110.set_function('volt:dc'))
+print(mult_4050.set_function('volt:dc'))
+print(mult_34401A.set_function('volt:dc'))
+
+
+print(mult_2000.set_range(1))
+print(mult_2110.set_range(1))
+print(mult_4050.set_range(1))
+print(mult_34401A.set_range(1))
+
+print(mult_2000.get_range())
+print(mult_2110.get_range())
+print(mult_4050.get_range())
+print(mult_34401A.get_range())
+
+
+print(mult_2000.get_error())
+print(mult_2110.get_error())
+print(mult_4050.get_error())
+print(mult_34401A.get_error())
 
 # Turn on the average feature of the multimeter and set the variables
     # def set_average(self, function = "VOLTage:AC", control = "MOVing", count = 100):
@@ -232,8 +356,6 @@ print(mult_4050.measure_voltage())
     # # Set the line integration rate
     # def set_NPL_cycles(self, function, n):
     #     self.connection.write(f"{function}:NPLCycles {n}")
-
-####
 
 # #     ____
 # #    / __ \___  ____  ___  _________ ______
