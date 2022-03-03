@@ -21,15 +21,21 @@ from LibraryTemplate import LibraryTemplate
 import numpy as np
 import time
 import sys
+import pyvisa
 
 # Note to self. I was playing around with error handling within the library.
+
+
+
+
+
 
 class Multimeter():
 
     supplyDictionary = {
-        "1": "E3631A",
-        "2": "E3632A",
-        "3": "E3649A",
+        "1": "2000",
+        "2": "2110",
+        "3": "4050",
     }
     
     def __init__(self, instrument_address = "GPIB0::20::INSTR", nickname = None, identify = True):
@@ -75,50 +81,66 @@ class Multimeter():
             print("Unit could not by identified using *IDN? command")
 
 
-
-    # Turn on the average feature of the multimeter and set the variables
-    def set_average(self, function = "VOLTage:AC", control = "MOVing", count = 100):
-        self.connection.write(function + ":AVERage:TCONtrol " + control)
-        self.connection.write(function + ":AVERage:COUNt " + str(count))
-        self.connection.write(function + ":AVERage:STATe ON")
-
-    def turn_off_averaging(self, function = "VOLTage:AC"):        
-        self.connection.write(function + ":AVERage:STATe OFF")
-                  
-
-    def get_average(self):
-        try:
-            print("There have been " + str(self.connection.query_ascii_values("CALCulate:AVERage:COUNt?")[0]) + " readings")
-            retval = self.connection.query("CALC:AVER:AVER?")
-        except ValueError as ex:
-            print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
-        except Exception as ex:
-            print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
-        return retval
-
-    # Clear all Event Registers
-    def clear_buffer(self):
-        self.connection.write("*CLS")
-
-
-    # Set the line integration rate
-    def set_NPL_cycles(self, function, n):
-        self.connection.write(f"{function}:NPLCycles {n}")
-
-    def fetch_voltage(self):
-        # If there is an error, return max int
+    def initiate(self) -> bool:
+        '''
+        Change state of triggering system to wait for trigger state.
+        '''
         retval = sys.maxsize 
         
-        # Try to get the value from the multimeter
         try:
-            retval = float(self.connection.query("FETCh?"))
+            if "2000" in self.instrumentID:
+                self.connection.write("INIT")
+                return True
+
+            elif "2110" in self.instrumentID:
+                self.connection.write("INIT")
+                return True
+
+            elif "4050" in self.instrumentID:
+                self.connection.write("INIT")
+                return True
+            else:
+                print(f"Device {self.instrumentID} not in library")
+        
         except ValueError as ex:
-            print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+            # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+            return retval
         except Exception as ex:
-            print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+            # print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+            return retval
+
+    def fetch_voltage(self) -> float:
+        '''
+        Sends the data in the instrument’s internal memory to the output buffer.
+        '''
+        retval = sys.maxsize 
+        
+        try:
+            if "2000" in self.instrumentID:
+                retval = float(self.connection.query("FETCh?"))
+                return retval
+
+            elif "2110" in self.instrumentID:
+                retval = float(self.connection.query("FETCh?"))
+                return retval
+
+            elif "4050" in self.instrumentID:
+                retval = float(self.connection.query("FETCh?"))
+                return retval
+
+            else:
+                print(f"Device {self.instrumentID} not in library")
+        
+        except ValueError as ex:
+            # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+            return retval
+        except Exception as ex:
+            # print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+            return retval
+
+
         
         # Return either the error, or the value from the multimeter
-        return retval
 
     def read_voltage(self):
         retval = sys.maxsize
@@ -130,7 +152,9 @@ class Multimeter():
             print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
         return retval
 
-    def measure(self, function = "VOLTage:DC"):
+        
+
+    def measure_voltage(self, function = "VOLTage:DC"):
         
         retval = sys.maxsize
         
@@ -162,6 +186,52 @@ class Multimeter():
             print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")        
         except Exception as ex:
             print(f"General Exception from meter: {self.instrumentID} at {self.instrument}")
+
+
+        
+# TODO :init:cont off for 2000
+
+mult_2000 = Multimeter("GPIB0::3::INSTR")
+mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
+mult_4050 = Multimeter("GPIB0::1::INSTR")
+
+# mult_2000.initiate()
+# mult_2110.initiate()
+# mult_4050.initiate()
+
+print(mult_2000.measure_voltage())
+print(mult_2110.measure_voltage())
+print(mult_4050.measure_voltage())
+
+
+# Turn on the average feature of the multimeter and set the variables
+    # def set_average(self, function = "VOLTage:AC", control = "MOVing", count = 100):
+    #     self.connection.write(function + ":AVERage:TCONtrol " + control)
+    #     self.connection.write(function + ":AVERage:COUNt " + str(count))
+    #     self.connection.write(function + ":AVERage:STATe ON")
+
+    # def turn_off_averaging(self, function = "VOLTage:AC"):        
+    #     self.connection.write(function + ":AVERage:STATe OFF")
+                  
+
+    # def get_average(self):
+    #     try:
+    #         print("There have been " + str(self.connection.query_ascii_values("CALCulate:AVERage:COUNt?")[0]) + " readings")
+    #         retval = self.connection.query("CALC:AVER:AVER?")
+    #     except ValueError as ex:
+    #         print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+    #     except Exception as ex:
+    #         print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+    #     return retval
+
+    # # Clear all Event Registers
+    # def clear_buffer(self):
+    #     self.connection.write("*CLS")
+
+
+    # # Set the line integration rate
+    # def set_NPL_cycles(self, function, n):
+    #     self.connection.write(f"{function}:NPLCycles {n}")
 
 ####
 
