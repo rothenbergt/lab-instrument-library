@@ -15,6 +15,14 @@ examples.
 
   foo = ClassFoo()
   bar = foo.FunctionBar()
+
+  ----------------------------------------------------------------------------------------------------------------- |
+  | COMPANY     MODEL   DOCUMENT      LINK                                                                          |
+  ----------------------------------------------------------------------------------------------------------------  |
+  | Agilent     E3631A  Users Guide   http://ece-research.unm.edu/jimp/650/instr_docs/AgilentE3631A.pdf             |
+  | Agilent     E3632A  Users Guide   https://www.keysight.com/us/en/assets/9018-01309/user-manuals/9018-01309.pdf  |
+  | Keysight    E3649A  Users Guide   https://www.keysight.com/us/en/assets/9018-01166/user-manuals/9018-01166.pdf  |
+  ----------------------------------------------------------------------------------------------------------------- |
 """
 
 import pyvisa
