@@ -23,9 +23,6 @@ import time
 import sys
 import pyvisa
 
-# Note to self. I was playing around with error handling within the library.
-
-
 
 class Multimeter():
 
@@ -43,10 +40,11 @@ class Multimeter():
         self.connection = None
         self.instrumentID = None
         self.nickname = nickname
-        self.make_connection(instrument_address, identify)    
+        if (not self.make_connection(instrument_address, identify)):
+            sys.exit()
 
     # Make the GPIB connection & set up the instrument
-    def make_connection(self, instrument_address, identify):
+    def make_connection(self, instrument_address, identify) -> bool:
         '''
         Identifies the instrument
         '''
@@ -62,11 +60,14 @@ class Multimeter():
             if identify == True:              
                 self.identify()
                 print(f"Successfully established {self.instrument_address} connection with {self.instrumentID}")
+                return True
             else:
                 print(f"Successfully established {self.instrument_address} connection with {self.nickname}")
+                return True
         
         except:
             print(f"Failed to establish {self.instrument_address} connection.")
+            return False
             
 
     def identify(self):
@@ -113,7 +114,7 @@ class Multimeter():
 
     def fetch_voltage(self) -> float:
         '''
-        Sends the data in the instrument’s internal memory to the output buffer.
+        Sends the data in the instruments internal memory to the output buffer.
         '''
         retval = sys.maxsize 
         
@@ -203,7 +204,10 @@ class Multimeter():
 
         return self.get_function()
 
-    def get_range(self):
+    def get_voltage_range():
+        get_range("VOLTage:DC")
+
+    def get_range(self, function):
         '''
         Specify signal level in volts 
         '''
@@ -214,18 +218,18 @@ class Multimeter():
 
                 # Path to configure measurement range:
                 # Select range (0 to 1010).
-                retval = self.connection.query("VOLTage:DC:RANGe?")
+                retval = self.connection.query(f"{function}:RANGe?")
                 return float(retval)
 
             elif "2110" in self.instrumentID:
-                retval = self.connection.query("VOLTage:DC:RANGe?")
+                retval = self.connection.query(f"{function}:RANGe?")
                 return float(retval)
 
             elif "4050" in self.instrumentID:
-                retval = self.connection.query("VOLTage:DC:RANGe?")
+                retval = self.connection.query(f"{function}:RANGe?")
                 return float(retval)
             elif "34401A":
-                retval = self.connection.query("VOLTage:DC:RANGe?")
+                retval = self.connection.query(f"{function}:RANGe?")
                 return float(retval)
             else:
                 print(f"Device {self.instrumentID} not in library")
@@ -238,8 +242,11 @@ class Multimeter():
             # print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
             return retval      
 
+    def set_voltage_range(self, voltage_range):
+        self.set_range(voltage_range, "VOLTage:DC")
 
-    def set_range(self, voltage_range: float):
+
+    def set_range(self, voltage_range: float, function):
         '''
         Specify signal level in volts 
         '''
@@ -250,16 +257,16 @@ class Multimeter():
 
                 # Path to configure measurement range:
                 # Select range (0 to 1010).
-                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+                self.connection.write(f"{function}:RANGe {voltage_range}")
 
             elif "2110" in self.instrumentID:
-                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+                self.connection.write(f"{function}:RANGe {voltage_range}")
 
             elif "4050" in self.instrumentID:
-                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+                self.connection.write(f"{function}:RANGe {voltage_range}")
 
             elif "34401A":
-                self.connection.write(f"VOLTage:DC:RANGe {voltage_range}")
+                self.connection.write(f"{function}:RANGe {voltage_range}")
 
             else:
                 print(f"Device {self.instrumentID} not in library")
@@ -311,16 +318,21 @@ print(mult_2110.set_function('volt:dc'))
 print(mult_4050.set_function('volt:dc'))
 print(mult_34401A.set_function('volt:dc'))
 
+print(mult_2000.set_voltage_range(2))
+print(mult_2110.set_voltage_range(2))
+print(mult_4050.set_voltage_range(2))
+print(mult_34401A.set_voltage_range(2))
 
-print(mult_2000.set_range(1))
-print(mult_2110.set_range(1))
-print(mult_4050.set_range(1))
-print(mult_34401A.set_range(1))
+print(mult_2000.get_range("VOLTage:DC"))
+print(mult_2110.get_range("VOLTage:DC"))
+print(mult_4050.get_range("VOLTage:DC"))
+print(mult_34401A.get_range("VOLTage:DC"))
 
-print(mult_2000.get_range())
-print(mult_2110.get_range())
-print(mult_4050.get_range())
-print(mult_34401A.get_range())
+
+print(mult_2000.measure_voltage())
+print(mult_2110.measure_voltage())
+print(mult_4050.measure_voltage())
+print(mult_34401A.measure_voltage())
 
 
 print(mult_2000.get_error())
@@ -366,73 +378,8 @@ print(mult_34401A.get_error())
 # #              Multimeter Library
 # #               Keithly 2000
 
-# import pyvisa
-# import sys
-# import time
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
 
-# # One of the quirks of the Agilent (HP) 34401A is that when you are remotly connected
-# # the device doesn't gather more data unless you send an INITIATE command. This takes
-# # much longer than if the device were operating without this constraint.
-
-# # Class which allows for easier access to the GPIB TEK Oscilloscope
-# class Keithly:
-
-#     # When initializing the object, make the connection
-#     def __init__(self, givenInstrument = ""):
-#         self.instrument = givenInstrument
-#         self.rm = pyvisa.ResourceManager()
-#         self.connected = False
-#         self.connection = ""
-#         self.instrumentID = ""
-#         self.Agilent = False
-#         self.Keithly = False
-#         self.Tektronix = False
-#         self.debug = False
-#         self.makeConnection(givenInstrument)
-
-#     def close_connection(self):
-#         self.connection.close()
-
-#     # Make the GPIB connection & set up the instrument
-#     def makeConnection(self, givenInstrument):
-#         try:
-#             # Make the connection
-#             self.connection = self.rm.open_resource(givenInstrument)
-#             # print("Connection Made")
-#             self.connected = True
-#             self.connection.timeout = 250000                     # Increase Timeout
-#             self.instrumentID = self.connection.query("*IDN?")[:-1]
-#             print("Successfully established " + self.instrument + " connection with", self.instrumentID)
-            
-#             if ("34401A" in self.instrumentID):
-#                 print("We will be using Agilent 33401A instruction set")
-#                 self.Agilent = True
-#             elif ("2000" in self.instrumentID):
-#                 print("We will be using Keithly 2000 instruction set")
-#                 self.Keithly = True
-            
-#         except:
-#             print("Failed to make the connection with ", self.instrument)
-#             self.connected = False
-#             quit()
-
-#     def write(self, message):
-#         self.connection.write(message)
-
-#     def query(self, message):
-#         return self.connection.query(message)
-
-#     def setRange(self, function = "VOLTage:AC", upper = "1"):
-#         self.connection.write(f"{function}:RANGE:UPPER {upper}")
         
-#     def autoOff(self, function = "VOLTage:AC"):
-#         self.connection.write(f"VOLTAGE:AC:RANGE:AUTO 0")
-    
-#     def autoOn(self, function = "VOLTage:AC"):
-#         self.connection.write(f"VOLTAGE:AC:RANGE:AUTO 1")
     
 #     # Turn on the average feature of the multimeter and set the variables
 #     def setAverage(self, function = "VOLTage:AC", control = "MOVing", count = 100):
@@ -530,31 +477,3 @@ print(mult_34401A.get_error())
         
 #         # Return either the error, or the value from the multimeter
 #         return retval
-
-#     def readVoltage(self):
-#         retval = sys.maxsize
-#         try:
-#             retval = float(self.connection.query("READ?"))
-#         except ValueError as ex:
-#             print("Could not convert returned value from meter: " + self.instrumentID + " at " + self.instrument)
-#         except Exception as ex:
-#             print("Could not fetch from meter: " + self.instrumentID + " at " + self.instrument)
-#         return retval
-
-#     def measure(self, function = "VOLTage:DC"):
-#         retval = sys.maxsize
-#         try:
-#             retval = float(self.connection.query(":MEASure:" + function + "?"))
-#         except ValueError as ex:
-#             print("Could not convert returned value from meter: " + self.instrumentID + " at " + self.instrument)
-#         except TimeoutError as ex:
-#             print("Timeout error from meter: " + self.instrumentID + " at " + self.instrument)
-#         except Exception as ex:
-#             print("Could not fetch from meter: " + self.instrumentID + " at " + self.instrument)
-#         return retval
-
-#     def getErrors(self):
-        
-#         if self.Agilent:
-#             print(multi.query("SYSTem:ERRor?"))
-
