@@ -42,7 +42,6 @@ class Supply():
         eggs: An integer count of the eggs we have laid.
     """
 
-
     supplyDictionary = {
         "1": "E3631A",
         "2": "E3632A",
@@ -63,6 +62,17 @@ class Supply():
         '''
         Identifies the instrument
         '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         # Make the connection
         try:
             # Make the connection and store it
@@ -86,6 +96,17 @@ class Supply():
         '''
         Identifies the instrument
         '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         try:
             self.instrumentID = self.connection.query("*IDN?")[:-1]
         except:
@@ -97,6 +118,17 @@ class Supply():
         '''
         Enables the output of the power supply
         '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         try:
             if "E3631A" in self.instrumentID:
                 self.connection.write("OUTPut ON")
@@ -115,6 +147,17 @@ class Supply():
         '''
         Disables the output of the power supply
         '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         try:
             if "E3631A" in self.instrumentID:
                 self.connection.write("OUTPut OFF")

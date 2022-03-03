@@ -21,8 +21,14 @@ import pyvisa
 import sys
 
 class Thermonics:
-    """
-    A class which allows communication with multiple temperature forcing systems found around the lab. 
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
     """
 
     instrumentDictionary = {

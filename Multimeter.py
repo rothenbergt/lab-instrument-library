@@ -32,7 +32,15 @@ import sys
 import pyvisa
 
 class Multimeter():
+    """Summary of class here.
 
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
     supplyDictionary = {
         "1": "2000",
         "2": "2110",
@@ -52,9 +60,17 @@ class Multimeter():
 
     # Make the GPIB connection & set up the instrument
     def make_connection(self, instrument_address, identify) -> bool:
-        '''
-        Identifies the instrument
-        '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         # Make the connection
         try:
             # Make the connection and store it
@@ -78,9 +94,17 @@ class Multimeter():
             
 
     def identify(self):
-        '''
-        Identifies the instrument
-        '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         try:
             self.instrumentID = self.connection.query("*IDN?")[:-1]
         except:
@@ -91,6 +115,17 @@ class Multimeter():
         '''
         Change state of triggering system to wait for trigger state.
         '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         retval = sys.maxsize 
         
         try:
@@ -123,6 +158,17 @@ class Multimeter():
         '''
         Sends the data in the instruments internal memory to the output buffer.
         '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         retval = sys.maxsize 
         
         try:
@@ -156,6 +202,17 @@ class Multimeter():
         # Return either the error, or the value from the multimeter
 
     def read_voltage(self):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         retval = sys.maxsize
         try:
             retval = float(self.connection.query("READ?"))
@@ -167,7 +224,17 @@ class Multimeter():
 
 
     def measure_voltage(self, function = "VOLTage:DC"):
-        
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         retval = sys.maxsize
         
         try:
@@ -181,7 +248,17 @@ class Multimeter():
         return retval
 
     def get_function(self):
+        """Gets the selected function.
 
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         try:
             current_function = self.connection.query("FUNCtion?")
             return current_function
@@ -189,6 +266,17 @@ class Multimeter():
             print(f"General Exception from meter: {self.instrumentID} at {self.instrument}")
 
     def set_function(self, function: str):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         '''
         VOLTage:AC"
         "VOLTage[:DC]"
@@ -212,12 +300,31 @@ class Multimeter():
         return self.get_function()
 
     def get_voltage_range():
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         get_range("VOLTage:DC")
 
     def get_range(self, function):
-        '''
-        Specify signal level in volts 
-        '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         retval = sys.maxsize 
         
         try:
@@ -250,13 +357,32 @@ class Multimeter():
             return retval      
 
     def set_voltage_range(self, voltage_range):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         self.set_range(voltage_range, "VOLTage:DC")
 
 
     def set_range(self, voltage_range: float, function):
-        '''
-        Specify signal level in volts 
-        '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         retval = sys.maxsize 
         
         try:
@@ -288,6 +414,17 @@ class Multimeter():
 
 
     def get_error(self):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
         try:
             # Get the error code from the multimeter
             error_string = self.connection.query("SYSTem:ERRor?").strip("\n")

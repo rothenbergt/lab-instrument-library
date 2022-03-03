@@ -22,7 +22,15 @@ from typing import List
 import inspect
 
 class Keithly228(LibraryTemplate):
-    
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """   
     def operate(self) -> bool:
         try:
             self.connection.write("F1X")

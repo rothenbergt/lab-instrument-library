@@ -23,7 +23,15 @@ import time
 import sys
 
 class Thermocouple(LibraryTemplate):
-    
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """    
     def get_temperature(self, channel = 1):
         retval = sys.maxsize
         try:

@@ -33,7 +33,15 @@ from PIL import Image, ImageColor, ImageDraw
 
 # Class which allows for easier access to the GPIB TEK Oscilloscope
 class Oscilloscope(LibraryTemplate):
+    """Summary of class here.
 
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
     # Set the state of the Oscilloscope to STOP or RUN
     def setState(self, command="STOP"):
         self.connection.write("ACQuire:STATE " + command)

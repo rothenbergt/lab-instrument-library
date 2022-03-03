@@ -23,7 +23,15 @@ import matplotlib.pyplot as plt
 from LibraryTemplate import LibraryTemplate
 
 class NetworkAnalyzer(LibraryTemplate):
+    """Summary of class here.
 
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
     # Set the power level of channel 1
     def set_power(self, newPowerLevel):
         self.connection.write(f":SOUR1:POW " + str(newPowerLevel))

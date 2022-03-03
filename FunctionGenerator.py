@@ -15,6 +15,12 @@ examples.
 
   foo = ClassFoo()
   bar = foo.FunctionBar()
+
+  --------------------------------------------------------------------------------------------------------------------- |
+  | COMPANY     MODEL     DOCUMENT      LINK                                                                            |
+  --------------------------------------------------------------------------------------------------------------------- |
+  | Tektronix   AFG3052C  Users Guide   https://mmrc.caltech.edu/Tektronics/AFG3021B/AFG3021B%20Programmer%20Manual.pdf |
+  --------------------------------------------------------------------------------------------------------------------- |
 """
 
 import time
@@ -27,7 +33,16 @@ from LibraryTemplate import LibraryTemplate
 # AFG3052C
 
 class AFG3000(LibraryTemplate):
-    
+    """Summary of class here.
+
+    Longer class information....
+    Longer class information....
+
+    Attributes:
+        likes_spam: A boolean indicating if we like SPAM or not.
+        eggs: An integer count of the eggs we have laid.
+    """
+       
     def set_function(self, function: float = "SINusoid", source: int = 1) -> None:
         """
         param function: SINusoid|SQUare|PULSe|RAMP|PRNoise|DC
