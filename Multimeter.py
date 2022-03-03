@@ -15,14 +15,21 @@ examples.
 
   foo = ClassFoo()
   bar = foo.FunctionBar()
-"""
 
+  --------------------------------------------------------------------------------------------------- |
+  | COMPANY     MODEL   DOCUMENT      LINK                                                            |
+  --------------------------------------------------------------------------------------------------- |
+  | HP          34401A  Users Guide   https://engineering.purdue.edu/~aae520/hp34401manual.pdf        |
+  | Keithly     2000    Users Guide   https://download.tek.com/manual/2000-900_J-Aug2010_User.pdf     |
+  | Keithly     2110    Users Guide   https://download.tek.com/manual/2110-901-01(C-Aug2013)(Ref).pdf |
+  | Tektronix   DMM4050 Users Guide   https://download.tek.com/manual/077036300web_0.pdf              |
+  --------------------------------------------------------------------------------------------------- |
+"""
 from LibraryTemplate import LibraryTemplate
 import numpy as np
 import time
 import sys
 import pyvisa
-
 
 class Multimeter():
 
