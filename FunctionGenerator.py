@@ -4,17 +4,40 @@
   / _, _/  __/ / / /  __(__  ) /_/ (__  )
  /_/ |_|\___/_/ /_/\___/____/\__,_/____/
  ----------------------------------------
-A one line summary of the module or program, terminated by a period.
+Python library containing general functions to control Tektronix AFG3052C.
 
-Leave one blank line.  The rest of this docstring should contain an
-overall description of the module or program.  Optionally, it may also
-contain a brief description of exported classes and functions and/or usage
-examples.
+The current methods available within the module are:
+
+  Class Methods:
+    check_for_errors()
+    clear()
+    close_connection()
+    get_amplitude()
+    get_frequency()
+    get_function()
+    get_leading_edge()
+    get_trailing_edge()
+    identify()
+    make_connection()
+    query()
+    reset()
+    set_amplitude()
+    set_burst_mode()
+    set_duty_cycle()
+    set_frequency()
+    set_function()
+    set_high_voltage()
+    set_leading_edge()
+    set_low_voltage()
+    set_period()
+    set_trailing_edge()
+    trigger()
+    write()
 
   Typical usage example:
 
-  foo = ClassFoo()
-  bar = foo.FunctionBar()
+  arb = AFG3000()
+  amplitude = arb.set_amplitude(source = 1, amplitude = 1)
 
   --------------------------------------------------------------------------------------------------------------------- |
   | COMPANY     MODEL     DOCUMENT      LINK                                                                            |
@@ -23,14 +46,9 @@ examples.
   --------------------------------------------------------------------------------------------------------------------- |
 """
 
-import time
 import sys
 import inspect
-import numpy as np
-from typing import Union
 from LibraryTemplate import LibraryTemplate
-
-# AFG3052C
 
 class AFG3000(LibraryTemplate):
     """Summary of class here.
@@ -42,7 +60,7 @@ class AFG3000(LibraryTemplate):
         likes_spam: A boolean indicating if we like SPAM or not.
         eggs: An integer count of the eggs we have laid.
     """
-       
+
     def set_function(self, function: float = "SINusoid", source: int = 1) -> None:
         """
         param function: SINusoid|SQUare|PULSe|RAMP|PRNoise|DC

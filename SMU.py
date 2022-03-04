@@ -13,8 +13,13 @@ examples.
 
   Typical usage example:
 
-  foo = ClassFoo()
-  bar = foo.FunctionBar()
+  smu = SMU()
+  voltage, current = smu.get_ch1_voltage_and_current()
+  --------------------------------------------------------------------------------------------------------------------- |
+  | COMPANY     MODEL     DOCUMENT      LINK                                                                            |
+  --------------------------------------------------------------------------------------------------------------------- |
+  | Keysight    B2902A    Users Guide   https://assets.testequity.com/te1/Documents/pdf/B2900A-prog.pdf                 |
+  --------------------------------------------------------------------------------------------------------------------- |
 """
 
 from LibraryTemplate import LibraryTemplate

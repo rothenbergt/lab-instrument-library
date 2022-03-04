@@ -4,17 +4,30 @@
   / _, _/  __/ / / /  __(__  ) /_/ (__  )
  /_/ |_|\___/_/ /_/\___/____/\__,_/____/
  ----------------------------------------
-A one line summary of the module or program, terminated by a period.
+Python library containing general functions to control lab multimeters.
 
-Leave one blank line.  The rest of this docstring should contain an
-overall description of the module or program.  Optionally, it may also
-contain a brief description of exported classes and functions and/or usage
-examples.
+The current methods available within the module are:
+
+  Class Methods:
+    __init__()
+    fetch_voltage()
+    get_error()
+    get_function()
+    get_range()
+    get_voltage_range()
+    identify()
+    initiate()
+    make_connection()
+    measure_voltage()
+    read_voltage()
+    set_function()
+    set_range()
+    set_voltage_range()
 
   Typical usage example:
 
-  foo = ClassFoo()
-  bar = foo.FunctionBar()
+  mult = Multimeter("GPIB0::15::INSTR")
+  measured_voltage = mult.measure_voltage()
 
   --------------------------------------------------------------------------------------------------- |
   | COMPANY     MODEL   DOCUMENT      LINK                                                            |
@@ -41,7 +54,7 @@ class Multimeter():
         likes_spam: A boolean indicating if we like SPAM or not.
         eggs: An integer count of the eggs we have laid.
     """
-    supplyDictionary = {
+    lab_multimeters = {
         "1": "2000",
         "2": "2110",
         "3": "4050",
@@ -49,7 +62,20 @@ class Multimeter():
     }
     
     def __init__(self, instrument_address = "GPIB0::20::INSTR", nickname = None, identify = True):
-        
+        '''
+        Disables the output of the power supply
+        '''
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """      
         self.instrument_address = instrument_address
         self.rm = pyvisa.ResourceManager()
         self.connection = None
@@ -442,182 +468,44 @@ class Multimeter():
 
 # TODO :init:cont off for 2000
 
-mult_2000 = Multimeter("GPIB0::3::INSTR")
-mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
-mult_4050 = Multimeter("GPIB0::2::INSTR")
-mult_34401A = Multimeter("GPIB0::1::INSTR")
+# mult_2000 = Multimeter("GPIB0::3::INSTR")
+# mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
+# mult_4050 = Multimeter("GPIB0::2::INSTR")
+# mult_34401A = Multimeter("GPIB0::1::INSTR")
 
-# mult_2000.initiate()
-# mult_2110.initiate()
-# mult_4050.initiate()
-# mult_34401A.initiate()
+# # mult_2000.initiate()
+# # mult_2110.initiate()
+# # mult_4050.initiate()
+# # mult_34401A.initiate()
 
-# print(mult_2000.fetch_voltage())
-# print(mult_2110.fetch_voltage())
-# print(mult_4050.fetch_voltage())
-# print(mult_34401A.fetch_voltage())
+# # print(mult_2000.fetch_voltage())
+# # print(mult_2110.fetch_voltage())
+# # print(mult_4050.fetch_voltage())
+# # print(mult_34401A.fetch_voltage())
 
-print(mult_2000.set_function('volt:dc'))
-print(mult_2110.set_function('volt:dc'))
-print(mult_4050.set_function('volt:dc'))
-print(mult_34401A.set_function('volt:dc'))
+# print(mult_2000.set_function('volt:dc'))
+# print(mult_2110.set_function('volt:dc'))
+# print(mult_4050.set_function('volt:dc'))
+# print(mult_34401A.set_function('volt:dc'))
 
-print(mult_2000.set_voltage_range(2))
-print(mult_2110.set_voltage_range(2))
-print(mult_4050.set_voltage_range(2))
-print(mult_34401A.set_voltage_range(2))
+# print(mult_2000.set_voltage_range(2))
+# print(mult_2110.set_voltage_range(2))
+# print(mult_4050.set_voltage_range(2))
+# print(mult_34401A.set_voltage_range(2))
 
-print(mult_2000.get_range("VOLTage:DC"))
-print(mult_2110.get_range("VOLTage:DC"))
-print(mult_4050.get_range("VOLTage:DC"))
-print(mult_34401A.get_range("VOLTage:DC"))
-
-
-print(mult_2000.measure_voltage())
-print(mult_2110.measure_voltage())
-print(mult_4050.measure_voltage())
-print(mult_34401A.measure_voltage())
+# print(mult_2000.get_range("VOLTage:DC"))
+# print(mult_2110.get_range("VOLTage:DC"))
+# print(mult_4050.get_range("VOLTage:DC"))
+# print(mult_34401A.get_range("VOLTage:DC"))
 
 
-print(mult_2000.get_error())
-print(mult_2110.get_error())
-print(mult_4050.get_error())
-print(mult_34401A.get_error())
-
-# Turn on the average feature of the multimeter and set the variables
-    # def set_average(self, function = "VOLTage:AC", control = "MOVing", count = 100):
-    #     self.connection.write(function + ":AVERage:TCONtrol " + control)
-    #     self.connection.write(function + ":AVERage:COUNt " + str(count))
-    #     self.connection.write(function + ":AVERage:STATe ON")
-
-    # def turn_off_averaging(self, function = "VOLTage:AC"):        
-    #     self.connection.write(function + ":AVERage:STATe OFF")
-                  
-
-    # def get_average(self):
-    #     try:
-    #         print("There have been " + str(self.connection.query_ascii_values("CALCulate:AVERage:COUNt?")[0]) + " readings")
-    #         retval = self.connection.query("CALC:AVER:AVER?")
-    #     except ValueError as ex:
-    #         print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
-    #     except Exception as ex:
-    #         print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
-    #     return retval
-
-    # # Clear all Event Registers
-    # def clear_buffer(self):
-    #     self.connection.write("*CLS")
+# print(mult_2000.measure_voltage())
+# print(mult_2110.measure_voltage())
+# print(mult_4050.measure_voltage())
+# print(mult_34401A.measure_voltage())
 
 
-    # # Set the line integration rate
-    # def set_NPL_cycles(self, function, n):
-    #     self.connection.write(f"{function}:NPLCycles {n}")
-
-# #     ____
-# #    / __ \___  ____  ___  _________ ______
-# #   / /_/ / _ \/ __ \/ _ \/ ___/ __ `/ ___/
-# #  / _, _/  __/ / / /  __(__  ) /_/ (__  )
-# # /_/ |_|\___/_/ /_/\___/____/\__,_/____/
-# # ----------------------------------------
-# #              Multimeter Library
-# #               Keithly 2000
-
-
-        
-    
-#     # Turn on the average feature of the multimeter and set the variables
-#     def setAverage(self, function = "VOLTage:AC", control = "MOVing", count = 100):
-        
-#         if (self.debug): print("Turning on averaging for " + self.instrumentID + " at " + self.instrument)
-        
-#         if self.Agilent:
-#             self.connection.write("CALC:FUNC AVER")          # Turn on Averaging
-#             self.connection.write("CALC:STATe ON")           # Turn on Math State
-
-#             # The beeper is turned off as for each new MIN / MAX value found, the device will beep. 
-#             self.connection.write("SYSTem:BEEPer:STATe OFF") 
-
-#         elif self.Keithly:
-#             self.connection.write(function + ":AVERage:TCONtrol " + control)
-#             self.connection.write(function + ":AVERage:COUNt " + str(count))
-#             self.connection.write(function + ":AVERage:STATe ON")
-
-#     def turnOffAveraging(self, function = "VOLTage:AC"):
-        
-#         if (self.debug): print("Turning off averaging for " + self.instrumentID + " at " + self.instrument)
-        
-#         if self.Keithly:
-#             self.connection.write(function + ":AVERage:STATe OFF")
-            
-#         elif self.Agilent:
-#             self.connection.write("CALC:STATe OFF")          
-            
-
-#     def getAverage(self):
-        
-#         if self.Agilent:
-#             retval = sys.maxsize
-#             # Try to get the value from the multimeter
-#             try:
-#                 print("There have been " + str(self.connection.query_ascii_values("CALCulate:AVERage:COUNt?")[0]) + " readings")
-                
-#                 retval = self.connection.query("CALC:AVER:AVER?")
-#             except ValueError as ex:
-#                 print("Could not convert returned value from meter: " + self.instrumentID + " at " + self.instrument)
-#             except Exception as ex:
-#                 print("Could not fetch from meter: " + self.instrumentID + " at " + self.instrument)
-        
-#         return retval
-
-#     # Clear all Event Registers
-#     def clearBuffer(self):
-#         self.connection.write("*CLS")
-
-#     # Power up to the default conditions
-#     def reset(self):
-#         self.connection.write("*RST")
-
-#     # Set the line integration rate
-#     def setNPLCycles(self, function, n):
-#         self.connection.write(function + ":NPLCycles " + n)
-
-#     def getAverageCount(self, readings, interval = 0):
-#         self.connection.write(":status:measurement:enable 512; *sre 1")
-#         self.connection.write("INITiate:CONTinuous OFF")
-#         self.connection.write(f":SAMPle:COUNt {readings}")
-#         self.connection.write("trigger:source bus")
-#         # self.connection.write(f"trigger:delay {interval / 1000}")
-#         self.connection.write(f"trace:points {readings}")
-#         self.connection.write("trace:feed sense1; feed:control next")
-        
-#         self.connection.write("initiate")
-#         self.connection.assert_trigger()
-#         self.connection.query("*OPC?")
-
-#         voltages = self.connection.query_ascii_values("trace:data?")
-#         print(voltages)
-#         print("Average voltage: ", sum(voltages) / len(voltages))
-#         return voltages
-
-#     def fetchVoltage(self):
-        
-#         # if (self.debug): print("Fetching voltage from " + self.instrumentID + " at " + self.instrument)
-        
-#         # If there is an error, return max int
-#         retval = sys.maxsize 
-        
-#         # If we are using the Agilent 34401A instruction set, we will want to
-#         # first send the initiate command to transfer the readings to the internal memory
-#         if (self.Agilent):
-#             self.connection.write("INITiate")
-
-#         # Try to get the value from the multimeter
-#         try:
-#             retval = float(self.connection.query("FETCh?"))
-#         except ValueError as ex:
-#             print("Could not convert returned value from meter: " + self.instrumentID + " at " + self.instrument)
-#         except Exception as ex:
-#             print("Could not fetch from meter: " + self.instrumentID + " at " + self.instrument)
-        
-#         # Return either the error, or the value from the multimeter
-#         return retval
+# print(mult_2000.get_error())
+# print(mult_2110.get_error())
+# print(mult_4050.get_error())
+# print(mult_34401A.get_error())
