@@ -254,7 +254,6 @@ class Multimeter():
             return retval
     
 
-
     def read_voltage(self):
         """Gets the selected function.
 
@@ -315,7 +314,7 @@ class Multimeter():
         """
         try:
             current_function = self.connection.query("FUNCtion?")
-            return current_function
+            return current_function.strip("\n")
         except:
             print(f"General Exception from meter: {self.instrument_ID} at {self.instrument}")
 
@@ -352,8 +351,69 @@ class Multimeter():
 
         return self.get_function()
 
-    def set_thermocouple_type(self, thermocouple_type: str):
-        self.connection.write(f"TCOuple:TYPE {thermocouple_type}")
+
+    def get_thermocouple_type(self) -> str:
+        try:
+            if "2000" in self.instrument_ID:
+                retval = self.connection.query(f"TEMPerature:TCOUple:TYPE?")
+                return retval.strip("\n")
+
+            elif "2110" in self.instrument_ID:
+                retval = self.connection.query(f"TCOuple:TYPE?")
+                return retval
+
+            elif "4050" in self.instrument_ID:
+                return retval
+            elif "34401A":
+                return retval
+            else:
+                print(f"Device {self.instrument_ID} not in library")
+                return retval     
+        except:
+            print()
+
+    def set_thermocouple_type(self, thermocouple_type: str) -> str:
+        try:
+            if "2000" in self.instrument_ID:
+                self.connection.write(f"TEMPerature:TCOuple:TYPE {thermocouple_type}")
+                retval = self.get_thermocouple_type()
+                return retval
+
+            elif "2110" in self.instrument_ID:
+                self.connection.write(f"TCOuple:TYPE {thermocouple_type}")
+                retval = self.get_thermocouple_type()
+                return retval
+
+            elif "4050" in self.instrument_ID:
+                retval = float(self.connection.query("FETCh?"))
+                return retval
+            elif "34401A":
+                retval = float(self.connection.query("FETCh?"))
+                return retval
+            else:
+                print(f"Device {self.instrument_ID} not in library")
+                return retval
+        except:
+            print()
+
+
+
+
+
+    def set_thermocouple_unit(self, unit: str):
+        """Identifies the instrument ID using *IDN? query.
+
+        Args:
+        unit: set the unit to one of the following:
+            Cel, Far, K
+
+        Returns:
+        bool if the identification was successful or not
+
+        Raises:
+        Except: If the identification fails.
+        """
+        self.connection.write(f"UNIT {unit}")
 
 
     def get_voltage_range():
@@ -386,9 +446,6 @@ class Multimeter():
         
         try:
             if "2000" in self.instrument_ID:
-
-                # Path to configure measurement range:
-                # Select range (0 to 1010).
                 retval = self.connection.query(f"{function}:RANGe?")
                 return float(retval)
 
@@ -508,10 +565,7 @@ class Multimeter():
 
 
 
-# mult_2000 = Multimeter("GPIB0::3::INSTR", identify = False, nickname = "2000")
-# print(mult_2000.fetch_voltage())
-# mult_2000 = Multimeter("GPIB0::13::INSTR", identify = False, nickname = "2000")
-# print(mult_2000.fetch_voltage())
+mult_2000 = Multimeter("GPIB0::3::INSTR")
 mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
 # mult_4050 = Multimeter("GPIB0::2::INSTR")
 # mult_34401A = Multimeter("GPIB0::1::INSTR")
@@ -530,8 +584,17 @@ mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
 # print(mult_2000.set_function('volt:dc'))
 # print(mult_2000.set_function('TCOuple'))
 
-print(mult_2110.set_function('TCOuple'))
-mult_2110.set_thermocouple_type("T")
+# print(mult_2110.set_function('TCOuple'))
+# print(mult_2110.set_thermocouple_type("T"))
+# mult_2110.set_thermocouple_unit("Far")
+
+print("Keithly 2000")
+
+print(mult_2000.set_function('TEMP'))
+print(mult_2000.set_thermocouple_type("T"))
+
+
+
 # print(mult_4050.set_function('volt:dc'))
 # print(mult_34401A.set_function('volt:dc'))
 
@@ -555,7 +618,7 @@ print(mult_2110.fetch_voltage())
 # print(mult_34401A.measure_voltage())
 
 
-# print(mult_2000.get_error())
+print(mult_2000.get_error())
 # print(mult_2110.get_error())
 # print(mult_4050.get_error())
 # print(mult_34401A.get_error())

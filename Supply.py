@@ -22,6 +22,8 @@ examples.
   | Agilent     E3631A  Users Guide   http://ece-research.unm.edu/jimp/650/instr_docs/AgilentE3631A.pdf             |
   | Agilent     E3632A  Users Guide   https://www.keysight.com/us/en/assets/9018-01309/user-manuals/9018-01309.pdf  |
   | Keysight    E3649A  Users Guide   https://www.keysight.com/us/en/assets/9018-01166/user-manuals/9018-01166.pdf  |
+  | Keysight    E36313A Users Guide   https://www.keysight.com/us/en/assets/9018-04576/user-manuals/9018-04576.pdf  |
+  | Keysight    E36234A Users Guide   https://www.keysight.com/us/en/assets/9018-04838/user-manuals/9018-04838.pdf  |
   ----------------------------------------------------------------------------------------------------------------- |
 """
 
@@ -136,6 +138,8 @@ class Supply():
                 self.connection.write("OUTPut ON")
             elif "E3649A" in self.instrumentID:
                 self.connection.write("OUTPut ON")     
+            elif "E36313A" in self.instrumentID:
+                self.connection.write("OUTPut ON")     
             else:
                 print(f"Device {self.instrumentID} not in library")
         
@@ -165,6 +169,8 @@ class Supply():
                 self.connection.write("OUTPut OFF")
             elif "E3649A" in self.instrumentID:
                 self.connection.write("OUTPut OFF")     
+            elif "E36313A" in self.instrumentID:
+                self.connection.write("OUTPut OFF")     
             else:
                 print(f"Device {self.instrumentID} not in library")
         
@@ -185,6 +191,8 @@ class Supply():
                 return False 
             elif "E3649A" in self.instrumentID:
                 self.connection.write("INSTrument:SELect OUTPut1")     
+            elif "E36313A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 1")
             else:
                 print(f"Device {self.instrumentID} not in library")
             return True
@@ -203,6 +211,8 @@ class Supply():
                 return False 
             elif "E3649A" in self.instrumentID:
                 self.connection.write("INSTrument:SELect OUTPut2")     
+            elif "E36313A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 2")
             else:
                 print(f"Device {self.instrumentID} not in library")
             return True
@@ -211,7 +221,7 @@ class Supply():
 
     def select_output3(self) -> bool:
         '''
-        Selects Output 2
+        Selects Output 3
         '''
         try:
             if "E3631A" in self.instrumentID:
@@ -222,6 +232,8 @@ class Supply():
             elif "E3649A" in self.instrumentID:
                 print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
                 return False
+            elif "E36313A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 3")
             else:
                 print(f"Device {self.instrumentID} not in library")
             return True
@@ -369,9 +381,16 @@ class Supply():
     def query(self, message):
         return self.connection.query(message)
 
-
+E36313A = Supply("USB0::0x2A8D::0x1202::MY61001838::INSTR")
 # E3632A = Supply("GPIB0::2::INSTR")
 # E3649A = Supply("GPIB0::5::INSTR")
 # E3631A = Supply("GPIB::6::INSTR")
 
+E36313A.select_output1()
+E36313A.enable_output()
 
+E36313A.select_output2()
+E36313A.enable_output()
+
+E36313A.select_output3()
+E36313A.enable_output()
