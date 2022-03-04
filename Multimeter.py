@@ -43,16 +43,13 @@ import numpy as np
 import time
 import sys
 import pyvisa
+import inspect
 
 class Multimeter():
-    """Summary of class here.
-
-    Longer class information....
-    Longer class information....
+    """General Multimeter class.
 
     Attributes:
-        likes_spam: A boolean indicating if we like SPAM or not.
-        eggs: An integer count of the eggs we have laid.
+        lab_multimeters: A dictionary of the current lab multimeters.
     """
     lab_multimeters = {
         "1": "2000",
@@ -79,7 +76,7 @@ class Multimeter():
         self.instrument_address = instrument_address
         self.rm = pyvisa.ResourceManager()
         self.connection = None
-        self.instrumentID = None
+        self.instrument_ID = None
         self.nickname = nickname
         if (not self.make_connection(instrument_address, identify)):
             sys.exit()
@@ -108,7 +105,7 @@ class Multimeter():
             # Display that the connection has been made
             if identify == True:              
                 self.identify()
-                print(f"Successfully established {self.instrument_address} connection with {self.instrumentID}")
+                print(f"Successfully established {self.instrument_address} connection with {self.instrument_ID}")
                 return True
             else:
                 print(f"Successfully established {self.instrument_address} connection with {self.nickname}")
@@ -132,7 +129,7 @@ class Multimeter():
         Except: If the query fails.
         """
         try:
-            self.instrumentID = self.connection.query("*IDN?")[:-1]
+            self.instrument_ID = self.connection.query("*IDN?")[:-1]
         except:
             print("Unit could not by identified using *IDN? command")
 
@@ -155,15 +152,15 @@ class Multimeter():
         retval = sys.maxsize 
         
         try:
-            if "2000" in self.instrumentID:
+            if "2000" in self.instrument_ID:
                 self.connection.write("INIT")
                 return True
 
-            elif "2110" in self.instrumentID:
+            elif "2110" in self.instrument_ID:
                 self.connection.write("INIT")
                 return True
 
-            elif "4050" in self.instrumentID:
+            elif "4050" in self.instrument_ID:
                 self.connection.write("INIT")
                 return True
 
@@ -171,7 +168,7 @@ class Multimeter():
                 self.connection.write("INIT")
                 return True
             else:
-                print(f"Device {self.instrumentID} not in library")
+                print(f"Device {self.instrument_ID} not in library")
         
         except ValueError as ex:
             # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
@@ -181,19 +178,19 @@ class Multimeter():
             return retval
 
     def fetch_voltage(self) -> float:
-        '''
-        Sends the data in the instruments internal memory to the output buffer.
-        '''
-        """Gets the selected function.
+        """Uses the FETCh? command to transfer the readings from the
+        multimeters internal memory to the multimeters output buffer where
+        you can read them into your bus controller.
 
         Args:
-        minimum: The selected channel
+        none
 
         Returns:
-        The current selected function.
+        The voltage or sys.maxsize to indicate there was an error
 
         Raises:
-        Except: If the query fails.
+        ValueError: If the result from the multimeter couldn't be convereted to float.
+        Exception: GPIB Error retreiving from multimeter
         """
         retval = sys.maxsize 
         
@@ -217,15 +214,16 @@ class Multimeter():
                 return retval
         
         except ValueError as ex:
-            # print(f"Could not convert returned value from meter: {self.instrumentID} at {self.instrument}")
+            print(f"Could not convert returned value to floatfrom meter: {self.instrumentID} at {self.instrument} \n \
+                    in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}: {message}")
             return retval
-        except Exception as ex:
-            # print(f"Could not fetch from meter: {self.instrumentID} at {self.instrument}")
+        except pyvisa.errors.VisaIOError as ex:
+            print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}: {message}")
+            return retval
+        except pyvisa.errors.VI_ERROR_TMO as ex:
+            print(f"Device {self.instrumentID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
             return retval
 
-
-        
-        # Return either the error, or the value from the multimeter
 
     def read_voltage(self):
         """Gets the selected function.
@@ -465,13 +463,22 @@ class Multimeter():
         except Exception as ex:
             print(f"General Exception from meter: {self.instrumentID} at {self.instrument}")
 
+    def query(self, message):
+        try:
+            return self.connection.query(message)
+        except pyvisa.errors.VisaIOError as ex:
+            print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}: {message}")
+        except pyvisa.errors.VI_ERROR_TMO as ex:
+            print(f"Device {self.instrumentID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
 
 # TODO :init:cont off for 2000
 
-# mult_2000 = Multimeter("GPIB0::3::INSTR")
+mult_2000 = Multimeter("GPIB0::3::INSTR")
 # mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
 # mult_4050 = Multimeter("GPIB0::2::INSTR")
 # mult_34401A = Multimeter("GPIB0::1::INSTR")
+
+mult_2000.query("testing")
 
 # # mult_2000.initiate()
 # # mult_2110.initiate()
