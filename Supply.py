@@ -4,17 +4,12 @@
   / _, _/  __/ / / /  __(__  ) /_/ (__  )
  /_/ |_|\___/_/ /_/\___/____/\__,_/____/
  ----------------------------------------
-A one line summary of the module or program, terminated by a period.
-
-Leave one blank line.  The rest of this docstring should contain an
-overall description of the module or program.  Optionally, it may also
-contain a brief description of exported classes and functions and/or usage
-examples.
+Python library containing general functions to control lab supplies.
 
   Typical usage example:
 
-  foo = ClassFoo()
-  bar = foo.FunctionBar()
+  supply = Supply()
+  supply_voltage = foo.set_voltage(voltage = 1)
 
   ----------------------------------------------------------------------------------------------------------------- |
   | COMPANY     MODEL   DOCUMENT      LINK                                                                          |
@@ -117,10 +112,7 @@ class Supply():
 
     
     def enable_output(self) -> bool:
-        '''
-        Enables the output of the power supply
-        '''
-        """Gets the selected function.
+        """Enables the output of the power supply
 
         Args:
         minimum: The selected channel
@@ -139,6 +131,8 @@ class Supply():
             elif "E3649A" in self.instrumentID:
                 self.connection.write("OUTPut ON")     
             elif "E36313A" in self.instrumentID:
+                self.connection.write("OUTPut ON")     
+            elif "E36234A" in self.instrumentID:
                 self.connection.write("OUTPut ON")     
             else:
                 print(f"Device {self.instrumentID} not in library")
@@ -148,10 +142,7 @@ class Supply():
             return False
     
     def disable_output(self) -> bool:
-        '''
-        Disables the output of the power supply
-        '''
-        """Gets the selected function.
+        """Disables the output of the power supply
 
         Args:
         minimum: The selected channel
@@ -171,6 +162,8 @@ class Supply():
                 self.connection.write("OUTPut OFF")     
             elif "E36313A" in self.instrumentID:
                 self.connection.write("OUTPut OFF")     
+            elif "E36234A" in self.instrumentID:
+                self.connection.write("OUTPut OFF")  
             else:
                 print(f"Device {self.instrumentID} not in library")
         
@@ -193,6 +186,8 @@ class Supply():
                 self.connection.write("INSTrument:SELect OUTPut1")     
             elif "E36313A" in self.instrumentID:
                 self.connection.write("INSTrument:NSELect 1")
+            elif "E36234A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 1")
             else:
                 print(f"Device {self.instrumentID} not in library")
             return True
@@ -213,6 +208,8 @@ class Supply():
                 self.connection.write("INSTrument:SELect OUTPut2")     
             elif "E36313A" in self.instrumentID:
                 self.connection.write("INSTrument:NSELect 2")
+            elif "E36234A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 2")
             else:
                 print(f"Device {self.instrumentID} not in library")
             return True
@@ -226,14 +223,16 @@ class Supply():
         try:
             if "E3631A" in self.instrumentID:
                 self.connection.write("INSTrument:NSELect 3")     
+            elif "E36313A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 3")
+            elif "E36234A" in self.instrumentID:
+                self.connection.write("INSTrument:NSELect 3")
             elif "E3632A" in self.instrumentID:
                 print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
                 return False 
             elif "E3649A" in self.instrumentID:
                 print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
                 return False
-            elif "E36313A" in self.instrumentID:
-                self.connection.write("INSTrument:NSELect 3")
             else:
                 print(f"Device {self.instrumentID} not in library")
             return True
@@ -245,13 +244,19 @@ class Supply():
         Sets a voltage on the power supply
         '''
         try:
-            if "E3631A" in self.instrumentID:
+            if "E3631A" in self.instrumentID: 
                 self.connection.write(f"VOLT {voltage}")
                 self.connection.write(f"CURR {current}")
             elif "E3632A" in self.instrumentID:
                 self.connection.write(f"APPLy {voltage},{current}")
             elif "E3649A" in self.instrumentID:
                 self.connection.write(f"APPLy {voltage},{current}")
+            elif "E36313A" in self.instrumentID:
+                self.connection.write(f"VOLT {voltage}")
+                self.connection.write(f"CURR {current}")            
+            elif "E36234A" in self.instrumentID:
+                self.connection.write(f"VOLT {voltage}")
+                self.connection.write(f"CURR {current}")  
             else:
                 print(f"Device {self.instrumentID} not in library")
         
@@ -381,16 +386,32 @@ class Supply():
     def query(self, message):
         return self.connection.query(message)
 
-E36313A = Supply("USB0::0x2A8D::0x1202::MY61001838::INSTR")
 # E3632A = Supply("GPIB0::2::INSTR")
 # E3649A = Supply("GPIB0::5::INSTR")
 # E3631A = Supply("GPIB::6::INSTR")
+E36313A = Supply("USB0::0x2A8D::0x1202::MY61001838::INSTR")
+E36234A = Supply("USB0::0x2A8D::0x3402::MY61001286::INSTR")
+
+
 
 E36313A.select_output1()
 E36313A.enable_output()
+E36313A.set_voltage(6, 1)
+
 
 E36313A.select_output2()
 E36313A.enable_output()
+E36313A.set_voltage(25)
 
 E36313A.select_output3()
 E36313A.enable_output()
+E36313A.set_voltage(25)
+
+
+E36234A.select_output1()
+E36234A.enable_output()
+E36234A.set_voltage(2, 1)
+
+E36234A.select_output2()
+E36234A.enable_output()
+E36234A.set_voltage(2, 1)

@@ -27,12 +27,12 @@ The current methods available within the module are:
   Typical usage example:
 
   mult = Multimeter("GPIB0::15::INSTR")
-  measured_voltage = mult.measure_voltage()
+  measured_voltage = mult.read_voltage()
 
   OR
 
   mult = Multimeter("GPIB0::15::INSTR", identify = False, nickname = "Keithly 2000")
-  measured_voltage = mult.measure_voltage()
+  measured_voltage = mult.read_voltage()
   
   --------------------------------------------------------------------------------------------------- |
   | COMPANY     MODEL   DOCUMENT      LINK                                                            |
@@ -255,7 +255,7 @@ class Multimeter():
     
 
     def read_voltage(self):
-        """Gets the selected function.
+        """Perform measurement and acquire reading.
 
         Args:
         minimum: The selected channel
@@ -267,13 +267,33 @@ class Multimeter():
         Except: If the query fails.
         """
         retval = sys.maxsize
+
         try:
+
+            # If continuous initiation is enabled, (:INITiate:CONTinuous 
+            # ON), then the :INITiate command generates an error and ignores the Command. 
+            if "2000" in self.instrument_ID:
+                self.connection.write(":INITiate:CONTinuous OFF")
+
             retval = float(self.connection.query("READ?"))
+            return retval
+
         except ValueError as ex:
-            print(f"Could not convert returned value from meter: {self.instrument_ID} at {self.instrument}")
-        except Exception as ex:
-            print(f"Could not fetch from meter: {self.instrument_ID} at {self.instrument}")
-        return retval
+            print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
+                    in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+            return retval
+
+        except pyvisa.errors.VisaIOError as ex:
+            if "VI_ERROR_NLISTENERS" in ex.abbreviation:
+                print(f"Looks like the instrument at {self.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
+                return retval
+            else:
+                print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+                return retval
+
+        except pyvisa.errors.VI_ERROR_TMO as ex:
+            print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+            return retval
 
 
     def measure_voltage(self, function = "VOLTage:DC"):
@@ -292,13 +312,23 @@ class Multimeter():
         
         try:
             retval = float(self.connection.query(f"MEASure:{function}?"))
+            return retval
         except ValueError as ex:
-            print(f"Could not convert returned value from meter: {self.instrument_ID} at {self.instrument}")
-        except TimeoutError as ex:
-            print(f"Timeout error from meter: {self.instrument_ID} at {self.instrument}")
-        except Exception as ex:
-            print(f"Could not fetch from meter: {self.instrument_ID} at {self.instrument}")
-        return retval
+            print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
+                    in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+            return retval
+
+        except pyvisa.errors.VisaIOError as ex:
+            if "VI_ERROR_NLISTENERS" in ex.abbreviation:
+                print(f"Looks like the instrument at {self.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
+                return retval
+            else:
+                print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+                return retval
+
+        except pyvisa.errors.VI_ERROR_TMO as ex:
+            print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+            return retval
 
     def get_function(self):
         """Gets the selected function.
@@ -396,9 +426,8 @@ class Multimeter():
         except:
             print()
 
-
-
-
+    def turn_off_auto_range(self):
+        self.connection.write("VOLTage:DC:RANGe:AUTO OFF")
 
     def set_thermocouple_unit(self, unit: str):
         """Identifies the instrument ID using *IDN? query.
@@ -416,7 +445,7 @@ class Multimeter():
         self.connection.write(f"UNIT {unit}")
 
 
-    def get_voltage_range():
+    def get_voltage_range(self):
         """Gets the selected function.
 
         Args:
@@ -428,7 +457,7 @@ class Multimeter():
         Raises:
         Except: If the query fails.
         """
-        get_range("VOLTage:DC")
+        return self.get_range("VOLTage:DC")
 
     def get_range(self, function):
         """Gets the selected function.
@@ -483,6 +512,7 @@ class Multimeter():
         Except: If the query fails.
         """
         self.set_range(voltage_range, "VOLTage:DC")
+        return self.get_voltage_range()
 
 
     def set_range(self, voltage_range: float, function):
@@ -561,64 +591,4 @@ class Multimeter():
         except pyvisa.errors.VI_ERROR_TMO as ex:
             print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
 
-# TODO :init:cont off for 2000
 
-
-
-mult_2000 = Multimeter("GPIB0::3::INSTR")
-mult_2110 = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
-# mult_4050 = Multimeter("GPIB0::2::INSTR")
-# mult_34401A = Multimeter("GPIB0::1::INSTR")
-
-
-# # mult_2000.initiate()
-# # mult_2110.initiate()
-# # mult_4050.initiate()
-# # mult_34401A.initiate()
-
-# # print(mult_2000.fetch_voltage())
-# # print(mult_2110.fetch_voltage())
-# # print(mult_4050.fetch_voltage())
-# # print(mult_34401A.fetch_voltage())
-
-# print(mult_2000.set_function('volt:dc'))
-# print(mult_2000.set_function('TCOuple'))
-
-# print(mult_2110.set_function('TCOuple'))
-# print(mult_2110.set_thermocouple_type("T"))
-# mult_2110.set_thermocouple_unit("Far")
-
-print("Keithly 2000")
-
-print(mult_2000.set_function('TEMP'))
-print(mult_2000.set_thermocouple_type("T"))
-
-
-
-# print(mult_4050.set_function('volt:dc'))
-# print(mult_34401A.set_function('volt:dc'))
-
-mult_2110.initiate()
-print(mult_2110.fetch_voltage())
-
-# print(mult_2000.set_voltage_range(2))
-# print(mult_2110.set_voltage_range(2))
-# print(mult_4050.set_voltage_range(2))
-# print(mult_34401A.set_voltage_range(2))
-
-# print(mult_2000.get_range("VOLTage:DC"))
-# print(mult_2110.get_range("VOLTage:DC"))
-# print(mult_4050.get_range("VOLTage:DC"))
-# print(mult_34401A.get_range("VOLTage:DC"))
-
-
-# print(mult_2000.measure_voltage())
-# print(mult_2110.measure_voltage())
-# print(mult_4050.measure_voltage())
-# print(mult_34401A.measure_voltage())
-
-
-print(mult_2000.get_error())
-# print(mult_2110.get_error())
-# print(mult_4050.get_error())
-# print(mult_34401A.get_error())
