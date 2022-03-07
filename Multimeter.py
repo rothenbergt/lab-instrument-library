@@ -43,12 +43,27 @@ The current methods available within the module are:
   | Tektronix   DMM4050 Users Guide   https://download.tek.com/manual/077036300web_0.pdf              |
   --------------------------------------------------------------------------------------------------- |
 """
-from LibraryTemplate import LibraryTemplate
-import numpy as np
-import time
+import inspect
 import sys
 import pyvisa
-import inspect
+
+# def exception_handler(func):
+#     def inner_function(*args, **kwargs):
+#         try:
+#             return func(*args, **kwargs)
+#         except TypeError:
+#             print(f"{func.__name__} only takes numbers as the argument")
+#         except pyvisa.errors.VisaIOError as ex:
+#             print(f"General Exception {type(ex)} {ex.abbreviation}")
+
+#             if "VI_ERROR_NLISTENERS" in ex.abbreviation:
+#                 print(f"Looks like the instrument at {func.__class__.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
+
+#             if "VI_ERROR_TMO" in ex.abbreviation:
+#                 print(f"Looks like the instrument at {func.__class__.instrument_address} is timing out.. Are you sure this is the right GPIB address?.")
+
+#             return sys.maxsize
+#     return inner_function
 
 class Multimeter():
     """General Multimeter class.
@@ -67,6 +82,32 @@ class Multimeter():
         "4": "34401A",
     }
     
+    def exception_handler(func):
+        def inner_function(self, *args, **kw):
+            try:
+                return func(self, *args, **kw)
+            except ValueError as ex:
+                print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
+                        in class {self.__class__.__name__}, method {func.__name__}")
+                return retval
+            except TypeError as ex:
+                print("Wrong param Type")
+            except pyvisa.errors.VisaIOError as ex:
+                print(f"Exception {type(ex)} {ex.abbreviation}")
+
+                if "VI_ERROR_NLISTENERS" in ex.abbreviation:
+                    print(f"Looks like the instrument at {self.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
+
+                if "VI_ERROR_TMO" in ex.abbreviation:
+                    print(f"Looks like the instrument at {self.instrument_address} is timing out.. Are you sure this is the right GPIB address?.")
+
+                return sys.maxsize
+            except Exception as ex:
+                print(f"This was an exception we were not prepared for {type(ex)}, {ex}")
+
+        return inner_function
+
+
     def __init__(self, instrument_address: str, nickname: str = None, identify: bool = True):
         """Initalizes the instance with necessary information.
 
@@ -197,6 +238,7 @@ class Multimeter():
             # print(f"Could not fetch from meter: {self.instrument_ID} at {self.instrument}")
             return retval
 
+    @exception_handler
     def fetch_voltage(self) -> float:
         """Uses the FETCh? command to transfer the readings from the
         multimeters internal memory to the multimeters output buffer where
@@ -216,44 +258,26 @@ class Multimeter():
         """
         retval = sys.maxsize 
         
-        try:
-            if "2000" in self.instrument_ID:
-                retval = float(self.connection.query("FETCh?"))
-                return retval
+        if "2000" in self.instrument_ID:
+            retval = float(self.connection.query("FETCh?"))
+            return retval
 
-            elif "2110" in self.instrument_ID:
-                retval = float(self.connection.query("FETCh?"))
-                return retval
+        elif "2110" in self.instrument_ID:
+            retval = float(self.connection.query("FETCh?"))
+            return retval
 
-            elif "4050" in self.instrument_ID:
-                retval = float(self.connection.query("FETCh?"))
-                return retval
-            elif "34401A":
-                retval = float(self.connection.query("FETCh?"))
-                return retval
-            else:
-                print(f"Device {self.instrument_ID} not in library")
-                return retval
+        elif "4050" in self.instrument_ID:
+            retval = float(self.connection.query("FETCh?"))
+            return retval
+        elif "34401A":
+            retval = float(self.connection.query("FETCh?"))
+            return retval
+        else:
+            print(f"Device {self.instrument_ID} not in library")
+            return retval
         
-        except ValueError as ex:
-            print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
-                    in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-            return retval
 
-        except pyvisa.errors.VisaIOError as ex:
-            
-            if "VI_ERROR_NLISTENERS" in ex.abbreviation:
-                print(f"Looks like the instrument at {self.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
-                return retval
-            else:
-                print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-                return retval
-
-        except pyvisa.errors.VI_ERROR_TMO as ex:
-            print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-            return retval
-    
-
+    @exception_handler    
     def read_voltage(self):
         """Perform measurement and acquire reading.
 
@@ -268,34 +292,16 @@ class Multimeter():
         """
         retval = sys.maxsize
 
-        try:
+        # If continuous initiation is enabled, (:INITiate:CONTinuous 
+        # ON), then the :INITiate command generates an error and ignores the Command. 
+        if "2000" in self.instrument_ID:
+            self.connection.write(":INITiate:CONTinuous OFF")
 
-            # If continuous initiation is enabled, (:INITiate:CONTinuous 
-            # ON), then the :INITiate command generates an error and ignores the Command. 
-            if "2000" in self.instrument_ID:
-                self.connection.write(":INITiate:CONTinuous OFF")
-
-            retval = float(self.connection.query("READ?"))
-            return retval
-
-        except ValueError as ex:
-            print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
-                    in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-            return retval
-
-        except pyvisa.errors.VisaIOError as ex:
-            if "VI_ERROR_NLISTENERS" in ex.abbreviation:
-                print(f"Looks like the instrument at {self.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
-                return retval
-            else:
-                print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-                return retval
-
-        except pyvisa.errors.VI_ERROR_TMO as ex:
-            print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-            return retval
+        retval = float(self.connection.query("READ?"))
+        return retval
 
 
+    @exception_handler    
     def measure_voltage(self, function = "VOLTage:DC"):
         """Gets the selected function.
 
@@ -310,26 +316,10 @@ class Multimeter():
         """
         retval = sys.maxsize
         
-        try:
-            retval = float(self.connection.query(f"MEASure:{function}?"))
-            return retval
-        except ValueError as ex:
-            print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
-                    in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-            return retval
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+        return retval
 
-        except pyvisa.errors.VisaIOError as ex:
-            if "VI_ERROR_NLISTENERS" in ex.abbreviation:
-                print(f"Looks like the instrument at {self.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
-                return retval
-            else:
-                print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-                return retval
-
-        except pyvisa.errors.VI_ERROR_TMO as ex:
-            print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
-            return retval
-
+    @exception_handler    
     def get_function(self):
         """Gets the selected function.
 
@@ -342,12 +332,10 @@ class Multimeter():
         Raises:
         Except: If the query fails.
         """
-        try:
-            current_function = self.connection.query("FUNCtion?")
-            return current_function.strip("\n")
-        except:
-            print(f"General Exception from meter: {self.instrument_ID} at {self.instrument}")
+        current_function = self.connection.query("FUNCtion?")
+        return current_function.strip("\n")
 
+    @exception_handler    
     def set_function(self, function: str):
         """Gets the selected function.
 
@@ -382,53 +370,51 @@ class Multimeter():
         return self.get_function()
 
 
+    @exception_handler    
     def get_thermocouple_type(self) -> str:
-        try:
-            if "2000" in self.instrument_ID:
-                retval = self.connection.query(f"TEMPerature:TCOUple:TYPE?")
-                return retval.strip("\n")
+        if "2000" in self.instrument_ID:
+            retval = self.connection.query(f"TEMPerature:TCOUple:TYPE?")
+            return retval.strip("\n")
 
-            elif "2110" in self.instrument_ID:
-                retval = self.connection.query(f"TCOuple:TYPE?")
-                return retval
+        elif "2110" in self.instrument_ID:
+            retval = self.connection.query(f"TCOuple:TYPE?")
+            return retval
 
-            elif "4050" in self.instrument_ID:
-                return retval
-            elif "34401A":
-                return retval
-            else:
-                print(f"Device {self.instrument_ID} not in library")
-                return retval     
-        except:
-            print()
+        elif "4050" in self.instrument_ID:
+            return retval
+        elif "34401A":
+            return retval
+        else:
+            print(f"Device {self.instrument_ID} not in library")
+            return retval     
 
+    @exception_handler    
     def set_thermocouple_type(self, thermocouple_type: str) -> str:
-        try:
-            if "2000" in self.instrument_ID:
-                self.connection.write(f"TEMPerature:TCOuple:TYPE {thermocouple_type}")
-                retval = self.get_thermocouple_type()
-                return retval
+        if "2000" in self.instrument_ID:
+            self.connection.write(f"TEMPerature:TCOuple:TYPE {thermocouple_type}")
+            retval = self.get_thermocouple_type()
+            return retval
 
-            elif "2110" in self.instrument_ID:
-                self.connection.write(f"TCOuple:TYPE {thermocouple_type}")
-                retval = self.get_thermocouple_type()
-                return retval
+        elif "2110" in self.instrument_ID:
+            self.connection.write(f"TCOuple:TYPE {thermocouple_type}")
+            retval = self.get_thermocouple_type()
+            return retval
 
-            elif "4050" in self.instrument_ID:
-                retval = float(self.connection.query("FETCh?"))
-                return retval
-            elif "34401A":
-                retval = float(self.connection.query("FETCh?"))
-                return retval
-            else:
-                print(f"Device {self.instrument_ID} not in library")
-                return retval
-        except:
-            print()
+        elif "4050" in self.instrument_ID:
+            retval = float(self.connection.query("FETCh?"))
+            return retval
+        elif "34401A":
+            retval = float(self.connection.query("FETCh?"))
+            return retval
+        else:
+            print(f"Device {self.instrument_ID} not in library")
+            return retval
 
+    @exception_handler    
     def turn_off_auto_range(self):
         self.connection.write("VOLTage:DC:RANGe:AUTO OFF")
 
+    @exception_handler    
     def set_thermocouple_unit(self, unit: str):
         """Identifies the instrument ID using *IDN? query.
 
@@ -442,9 +428,11 @@ class Multimeter():
         Raises:
         Except: If the identification fails.
         """
+
+
         self.connection.write(f"UNIT {unit}")
 
-
+    @exception_handler    
     def get_voltage_range(self):
         """Gets the selected function.
 
@@ -459,6 +447,7 @@ class Multimeter():
         """
         return self.get_range("VOLTage:DC")
 
+    @exception_handler    
     def get_range(self, function):
         """Gets the selected function.
 
@@ -473,32 +462,26 @@ class Multimeter():
         """
         retval = sys.maxsize 
         
-        try:
-            if "2000" in self.instrument_ID:
-                retval = self.connection.query(f"{function}:RANGe?")
-                return float(retval)
+        if "2000" in self.instrument_ID:
+            retval = self.connection.query(f"{function}:RANGe?")
+            return float(retval)
 
-            elif "2110" in self.instrument_ID:
-                retval = self.connection.query(f"{function}:RANGe?")
-                return float(retval)
+        elif "2110" in self.instrument_ID:
+            retval = self.connection.query(f"{function}:RANGe?")
+            return float(retval)
 
-            elif "4050" in self.instrument_ID:
-                retval = self.connection.query(f"{function}:RANGe?")
-                return float(retval)
-            elif "34401A":
-                retval = self.connection.query(f"{function}:RANGe?")
-                return float(retval)
-            else:
-                print(f"Device {self.instrument_ID} not in library")
-                return retval
-        
-        except ValueError as ex:
-            # print(f"Could not convert returned value from meter: {self.instrument_ID} at {self.instrument}")
+        elif "4050" in self.instrument_ID:
+            retval = self.connection.query(f"{function}:RANGe?")
+            return float(retval)
+        elif "34401A":
+            retval = self.connection.query(f"{function}:RANGe?")
+            return float(retval)
+        else:
+            print(f"Device {self.instrument_ID} not in library")
             return retval
-        except Exception as ex:
-            # print(f"Could not fetch from meter: {self.instrument_ID} at {self.instrument}")
-            return retval      
+        
 
+    @exception_handler    
     def set_voltage_range(self, voltage_range):
         """Gets the selected function.
 
@@ -514,7 +497,7 @@ class Multimeter():
         self.set_range(voltage_range, "VOLTage:DC")
         return self.get_voltage_range()
 
-
+    @exception_handler    
     def set_range(self, voltage_range: float, function):
         """Gets the selected function.
 
@@ -529,34 +512,27 @@ class Multimeter():
         """
         retval = sys.maxsize 
         
-        try:
-            if "2000" in self.instrument_ID:
+        if "2000" in self.instrument_ID:
 
-                # Path to configure measurement range:
-                # Select range (0 to 1010).
-                self.connection.write(f"{function}:RANGe {voltage_range}")
+            # Path to configure measurement range:
+            # Select range (0 to 1010).
+            self.connection.write(f"{function}:RANGe {voltage_range}")
 
-            elif "2110" in self.instrument_ID:
-                self.connection.write(f"{function}:RANGe {voltage_range}")
+        elif "2110" in self.instrument_ID:
+            self.connection.write(f"{function}:RANGe {voltage_range}")
 
-            elif "4050" in self.instrument_ID:
-                self.connection.write(f"{function}:RANGe {voltage_range}")
+        elif "4050" in self.instrument_ID:
+            self.connection.write(f"{function}:RANGe {voltage_range}")
 
-            elif "34401A":
-                self.connection.write(f"{function}:RANGe {voltage_range}")
+        elif "34401A":
+            self.connection.write(f"{function}:RANGe {voltage_range}")
 
-            else:
-                print(f"Device {self.instrument_ID} not in library")
-                return retval
+        else:
+            print(f"Device {self.instrument_ID} not in library")
+            return retval
         
-        except ValueError as ex:
-            # print(f"Could not convert returned value from meter: {self.instrument_ID} at {self.instrument}")
-            return retval
-        except Exception as ex:
-            # print(f"Could not fetch from meter: {self.instrument_ID} at {self.instrument}")
-            return retval
 
-
+    @exception_handler    
     def get_error(self):
         """Gets the selected function.
 
@@ -569,20 +545,16 @@ class Multimeter():
         Raises:
         Except: If the query fails.
         """
-        try:
-            # Get the error code from the multimeter
-            error_string = self.connection.query("SYSTem:ERRor?").strip("\n")
-            # If the error code is 0, we have no errors
-            # If the error code is anything other than 0, we have errors
+        # Get the error code from the multimeter
+        error_string = self.connection.query("SYSTem:ERRor?").strip("\n")
+        # If the error code is 0, we have no errors
+        # If the error code is anything other than 0, we have errors
+        
+        # Attempt to lookup the errors from the dictionary
+        return error_string
             
-            # Attempt to lookup the errors from the dictionary
-            return error_string
-            
-        except ValueError as ex:
-            print(f"Could not convert returned value from meter: {self.instrument_ID} at {self.instrument}")        
-        except Exception as ex:
-            print(f"General Exception from meter: {self.instrument_ID} at {self.instrument}")
 
+    @exception_handler
     def query(self, message):
         try:
             return self.connection.query(message)
@@ -592,3 +564,28 @@ class Multimeter():
             print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
 
 
+keithly2000 = Multimeter("GPIB0::3::INSTR")
+print(keithly2000.query("FETCH?"))
+
+
+
+print(keithly2000.fetch_voltage())
+print(keithly2000.get_error())
+print(keithly2000.get_function())
+print(keithly2000.get_range())
+print(keithly2000.get_thermocouple_type())
+print(keithly2000.get_voltage_range())
+print(keithly2000.identify())
+print(keithly2000.measure_voltage())
+print(keithly2000.read_voltage())
+
+
+print(keithly2000.set_function("VOLTage:DC"))
+print(keithly2000.set_range(voltage_range = 0.1, function = "VOLTage:DC"))
+print(keithly2000.set_voltage_range(0.1))
+
+
+for i in range(100):
+    print(keithly2000.read_voltage())
+
+print(keithly2000.get_error())
