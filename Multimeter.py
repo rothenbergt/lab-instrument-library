@@ -47,24 +47,6 @@ import inspect
 import sys
 import pyvisa
 
-# def exception_handler(func):
-#     def inner_function(*args, **kwargs):
-#         try:
-#             return func(*args, **kwargs)
-#         except TypeError:
-#             print(f"{func.__name__} only takes numbers as the argument")
-#         except pyvisa.errors.VisaIOError as ex:
-#             print(f"General Exception {type(ex)} {ex.abbreviation}")
-
-#             if "VI_ERROR_NLISTENERS" in ex.abbreviation:
-#                 print(f"Looks like the instrument at {func.__class__.instrument_address} isn't responding.. Are you sure this is the right GPIB address?.")
-
-#             if "VI_ERROR_TMO" in ex.abbreviation:
-#                 print(f"Looks like the instrument at {func.__class__.instrument_address} is timing out.. Are you sure this is the right GPIB address?.")
-
-#             return sys.maxsize
-#     return inner_function
-
 class Multimeter():
     """General Multimeter class.
 
@@ -83,6 +65,20 @@ class Multimeter():
     }
     
     def exception_handler(func):
+        """Handles the exceptions which might occur during a visa transaction.
+
+        Args:
+        func: the function which is being called
+
+        Returns:
+        The return value from the function
+
+        Raises:
+        ValueError: If the result couldn't be convereted to float.
+        pyvisa.errors.VisaIOError: 
+        pyvisa.errors.VisaIOErrorVI_ERROR_NLISTENERS:
+        pyvisa.errors.VI_ERROR_TMO:
+        """
         def inner_function(self, *args, **kw):
             try:
                 return func(self, *args, **kw)
@@ -100,6 +96,9 @@ class Multimeter():
 
                 if "VI_ERROR_TMO" in ex.abbreviation:
                     print(f"Looks like the instrument at {self.instrument_address} is timing out.. Are you sure this is the right GPIB address?.")
+
+                if "VI_ERROR_RSRC_NFOUND" in ex.abbreviation:
+                    print("Resource not found")
 
                 return sys.maxsize
             except Exception as ex:
@@ -210,33 +209,28 @@ class Multimeter():
         Raises:
         Except: If the query fails.
         """
-        retval = sys.maxsize 
         
-        try:
-            if "2000" in self.instrument_ID:
-                self.connection.write("INIT")
-                return True
+        if "2000" in self.instrument_ID:
+            self.connection.write("INIT")
+            return True
 
-            elif "2110" in self.instrument_ID:
-                self.connection.write("INIT")
-                return True
+        elif "2110" in self.instrument_ID:
+            self.connection.write("INIT")
+            return True
 
-            elif "4050" in self.instrument_ID:
-                self.connection.write("INIT")
-                return True
+        elif "4050" in self.instrument_ID:
+            self.connection.write("INIT")
+            return True
 
-            elif "34401A":
-                self.connection.write("INIT")
-                return True
-            else:
-                print(f"Device {self.instrument_ID} not in library")
+        elif "34401A":
+            self.connection.write("INIT")
+            return True
+        else:
+            print(f"Device {self.instrument_ID} not in library")
         
-        except ValueError as ex:
-            # print(f"Could not convert returned value from meter: {self.instrument_ID} at {self.instrument}")
-            return retval
-        except Exception as ex:
-            # print(f"Could not fetch from meter: {self.instrument_ID} at {self.instrument}")
-            return retval
+        return False
+        
+
 
     @exception_handler
     def fetch_voltage(self) -> float:
@@ -260,21 +254,16 @@ class Multimeter():
         
         if "2000" in self.instrument_ID:
             retval = float(self.connection.query("FETCh?"))
-            return retval
-
         elif "2110" in self.instrument_ID:
             retval = float(self.connection.query("FETCh?"))
-            return retval
-
         elif "4050" in self.instrument_ID:
             retval = float(self.connection.query("FETCh?"))
-            return retval
         elif "34401A":
             retval = float(self.connection.query("FETCh?"))
-            return retval
         else:
             print(f"Device {self.instrument_ID} not in library")
-            return retval
+        
+        return retval
         
 
     @exception_handler    
@@ -554,38 +543,30 @@ class Multimeter():
         return error_string
             
 
-    @exception_handler
-    def query(self, message):
-        try:
-            return self.connection.query(message)
-        except pyvisa.errors.VisaIOError as ex:
-            print(f"Input/Output error. Check your command in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}: {message}")
-        except pyvisa.errors.VI_ERROR_TMO as ex:
-            print(f"Device {self.instrument_ID} timeout error in class {self.__class__.__name__}, method {inspect.currentframe().f_code.co_name}")
+    @exception_handler    
+    def reset(self):
+        self.connection.write("*RST")
+        return True
+        
+
+    @exception_handler    
+    def clear(self):
+        self.connection.write("*CLS")
+        return True
 
 
-keithly2000 = Multimeter("GPIB0::3::INSTR")
-print(keithly2000.query("FETCH?"))
+    @exception_handler    
+    def write(self, message : str) -> str:
+        self.connection.write(message)
 
 
-
-print(keithly2000.fetch_voltage())
-print(keithly2000.get_error())
-print(keithly2000.get_function())
-print(keithly2000.get_range())
-print(keithly2000.get_thermocouple_type())
-print(keithly2000.get_voltage_range())
-print(keithly2000.identify())
-print(keithly2000.measure_voltage())
-print(keithly2000.read_voltage())
+    @exception_handler    
+    def query(self, message) -> str:
+        return self.connection.query(message)
 
 
-print(keithly2000.set_function("VOLTage:DC"))
-print(keithly2000.set_range(voltage_range = 0.1, function = "VOLTage:DC"))
-print(keithly2000.set_voltage_range(0.1))
+    @exception_handler    
+    def query_ascii_values(self, message) -> list:
+        return self.connection.query_ascii_values(message)
 
 
-for i in range(100):
-    print(keithly2000.read_voltage())
-
-print(keithly2000.get_error())

@@ -9,13 +9,30 @@ Python library containing general functions to control lab supplies.
     The current methods available within the module are:
 
     Class Methods:
-        __init__()
-
+        check_for_errors()
+        clear()
+        disable_output()
+        enable_output()
+        exception_handler()
+        get_voltage_range()
+        identify()
+        make_connection()
+        measure_current()
+        measure_voltage()
+        query()
+        query_ascii_values()
+        reset()
+        select_output1()
+        select_output2()
+        select_output3()
+        set_range()
+        set_voltage()
+        write()
 
     Typical usage example:
 
         supply = Supply()
-        supply_voltage = foo.set_voltage(voltage = 1)
+        supply_voltage = foo.set_voltage(voltage = 1, current = 1)
 
   ----------------------------------------------------------------------------------------------------------------- |
   | COMPANY     MODEL   DOCUMENT      LINK                                                                          |
@@ -33,7 +50,6 @@ import sys
 import time
 import numpy as np
 import inspect
-
 
 
 class Supply():
@@ -56,6 +72,20 @@ class Supply():
     }
 
     def exception_handler(func):
+        """Handles the exceptions which might occur during a visa transaction.
+
+        Args:
+        func: the function which is being called
+
+        Returns:
+        The return value from the function
+
+        Raises:
+        ValueError: If the result couldn't be convereted to float.
+        pyvisa.errors.VisaIOError: 
+        pyvisa.errors.VisaIOErrorVI_ERROR_NLISTENERS:
+        pyvisa.errors.VI_ERROR_TMO:
+        """
         def inner_function(self, *args, **kw):
             try:
                 return func(self, *args, **kw)
@@ -104,6 +134,7 @@ class Supply():
         if (not self.make_connection(identify)):
             sys.exit()
 
+    
     # Make the GPIB connection & set up the instrument
     def make_connection(self, identify: bool) -> bool:
         """Attempts to make a GPIB PyVISA connection with instrument .
@@ -168,7 +199,37 @@ class Supply():
 
 
     @exception_handler
+    def get_output_state(self) -> int:
+        """For the selected channel, check the output state
+
+        Args:
+        none
+
+        Returns:
+        the output state
+        """
+        
+        retval = sys.maxsize
+
+        if "E3631A" in self.instrument_ID:
+            retval = self.connection.query("OUTPut?")
+        elif "E3632A" in self.instrument_ID:
+            retval = self.connection.query("OUTPut?")
+        elif "E3649A" in self.instrument_ID:
+            retval = self.connection.query("OUTPut?")
+        elif "E36313A" in self.instrument_ID:
+            retval = self.connection.query("OUTPut?")
+        elif "E36234A" in self.instrument_ID:
+            retval = self.connection.query("OUTPut?")
+        else:
+            print(f"Device {self.instrument_ID} not in library")
+
+        return int(retval)
+
+
+    @exception_handler
     def enable_output(self) -> bool:
+        #TODO union the return function
         """Enables the output of the power supply
 
         Args:
@@ -180,56 +241,57 @@ class Supply():
         Raises:
         Except: If the query fails.
         """
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             self.connection.write("OUTPut ON")
-            return True
-        elif "E3632A" in self.instrumentID:
+            return self.get_output_state()
+        elif "E3632A" in self.instrument_ID:
             self.connection.write("OUTPut ON")
-            return True
-        elif "E3649A" in self.instrumentID:
+            return self.get_output_state()
+        elif "E3649A" in self.instrument_ID:
             self.connection.write("OUTPut ON")     
-            return True
-        elif "E36313A" in self.instrumentID:
+            return self.get_output_state()
+        elif "E36313A" in self.instrument_ID:
             self.connection.write("OUTPut ON")    
-            return True
-        elif "E36234A" in self.instrumentID:
+            return self.get_output_state()
+        elif "E36234A" in self.instrument_ID:
             self.connection.write("OUTPut ON")    
-            return True
+            return self.get_output_state()
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
     
         return False
+
+
 
     @exception_handler    
     def disable_output(self) -> bool:
         """Disables the output of the power supply
 
         Args:
-        minimum: The selected channel
 
         Returns:
-        The current selected function.
+        bool: if the disable went through or not.
 
         Raises:
         Except: If the query fails.
         """
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             self.connection.write("OUTPut OFF")
             return True
-        elif "E3632A" in self.instrumentID:
+        elif "E3632A" in self.instrument_ID:
             self.connection.write("OUTPut OFF")
             return True
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             self.connection.write("OUTPut OFF")    
             return True
-        elif "E36313A" in self.instrumentID:
+        elif "E36313A" in self.instrument_ID:
             self.connection.write("OUTPut OFF")  
             return True
-        elif "E36234A" in self.instrumentID:
+        elif "E36234A" in self.instrument_ID:
             self.connection.write("OUTPut OFF")  
             return True
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return False
 
@@ -238,23 +300,23 @@ class Supply():
         '''
         Selects Output 1
         '''
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 1")   
             return True
-        elif "E3632A" in self.instrumentID:
-            print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
+        elif "E3632A" in self.instrument_ID:
+            print(f"Device {self.instrument_ID} does not use {inspect.currentframe().f_code.co_name}")
             return False 
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             self.connection.write("INSTrument:SELect OUTPut1")   
             return True
-        elif "E36313A" in self.instrumentID:
+        elif "E36313A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 1")
             return True
-        elif "E36234A" in self.instrumentID:
+        elif "E36234A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 1")
             return True            
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return False   
 
@@ -263,23 +325,23 @@ class Supply():
         '''
         Selects Output 2
         '''
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 2")   
             return True
-        elif "E3632A" in self.instrumentID:
-            print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
+        elif "E3632A" in self.instrument_ID:
+            print(f"Device {self.instrument_ID} does not use {inspect.currentframe().f_code.co_name}")
             return False 
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             self.connection.write("INSTrument:SELect OUTPut2")   
             return True
-        elif "E36313A" in self.instrumentID:
+        elif "E36313A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 2")
             return True
-        elif "E36234A" in self.instrumentID:
+        elif "E36234A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 2")
             return True            
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return False       
 
@@ -288,23 +350,23 @@ class Supply():
         '''
         Selects Output 3
         '''
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 3")   
             return True
-        elif "E3632A" in self.instrumentID:
-            print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
+        elif "E3632A" in self.instrument_ID:
+            print(f"Device {self.instrument_ID} does not use {inspect.currentframe().f_code.co_name}")
             return False 
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             self.connection.write("INSTrument:SELect OUTPut3")   
             return True
-        elif "E36313A" in self.instrumentID:
+        elif "E36313A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 3")
             return True
-        elif "E36234A" in self.instrumentID:
+        elif "E36234A" in self.instrument_ID:
             self.connection.write("INSTrument:NSELect 3")
             return True            
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return False     
 
@@ -314,21 +376,21 @@ class Supply():
         Sets a voltage on the power supply
         '''
         try:
-            if "E3631A" in self.instrumentID: 
+            if "E3631A" in self.instrument_ID: 
                 self.connection.write(f"VOLT {voltage}")
                 self.connection.write(f"CURR {current}")
-            elif "E3632A" in self.instrumentID:
+            elif "E3632A" in self.instrument_ID:
                 self.connection.write(f"APPLy {voltage},{current}")
-            elif "E3649A" in self.instrumentID:
+            elif "E3649A" in self.instrument_ID:
                 self.connection.write(f"APPLy {voltage},{current}")
-            elif "E36313A" in self.instrumentID:
+            elif "E36313A" in self.instrument_ID:
                 self.connection.write(f"VOLT {voltage}")
                 self.connection.write(f"CURR {current}")            
-            elif "E36234A" in self.instrumentID:
+            elif "E36234A" in self.instrument_ID:
                 self.connection.write(f"VOLT {voltage}")
                 self.connection.write(f"CURR {current}")  
             else:
-                print(f"Device {self.instrumentID} not in library")
+                print(f"Device {self.instrument_ID} not in library")
         
             return True
         except:
@@ -339,10 +401,10 @@ class Supply():
         '''
         Sets the voltage range on the power supply
         '''
-        if "E3631A" in self.instrumentID:
-            print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
+        if "E3631A" in self.instrument_ID:
+            print(f"Device {self.instrument_ID} does not use {inspect.currentframe().f_code.co_name}")
 
-        elif "E3632A" in self.instrumentID:
+        elif "E3632A" in self.instrument_ID:
 
             if type(voltage) is str:
                 print(f"E3632A only accepts int/float in {inspect.currentframe().f_code.co_name}")
@@ -350,7 +412,7 @@ class Supply():
 
             self.connection.write(f"VOLTage:RANGe P{voltage}V")
 
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             
             if type(voltage) is not str:
                 print(f"E3649A cant take int/float in {inspect.currentframe().f_code.co_name}")
@@ -359,7 +421,7 @@ class Supply():
             self.connection.write(f"VOLTage:RANGe {voltage}")
         
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
     
 
@@ -370,14 +432,14 @@ class Supply():
         '''
         retval = sys.maxsize
 
-        if "E3631A" in self.instrumentID:
-            print(f"Device {self.instrumentID} does not use {inspect.currentframe().f_code.co_name}")
-        elif "E3632A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
+            print(f"Device {self.instrument_ID} does not use {inspect.currentframe().f_code.co_name}")
+        elif "E3632A" in self.instrument_ID:
             retval = self.connection.query("VOLTage:RANGe?")
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             retval = self.connection.query("VOLTage:RANGe?")
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return retval
 
@@ -390,14 +452,14 @@ class Supply():
 
         retval = sys.maxsize
 
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             retval = self.connection.query("MEASure:VOLTage:DC?")
-        elif "E3632A" in self.instrumentID:
+        elif "E3632A" in self.instrument_ID:
             retval = self.connection.query("MEASure:VOLTage:DC?")
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             retval = self.connection.query("MEASure:VOLTage:DC?")
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return float(retval)
 
@@ -410,14 +472,14 @@ class Supply():
 
         retval = sys.maxsize
 
-        if "E3631A" in self.instrumentID:
+        if "E3631A" in self.instrument_ID:
             retval = self.connection.query("MEASure:CURRent:DC?")
-        elif "E3632A" in self.instrumentID:
+        elif "E3632A" in self.instrument_ID:
             retval = self.connection.query("MEASure:CURRent:DC?")
-        elif "E3649A" in self.instrumentID:
+        elif "E3649A" in self.instrument_ID:
             retval = self.connection.query("MEASure:CURRent:DC?")
         else:
-            print(f"Device {self.instrumentID} not in library")
+            print(f"Device {self.instrument_ID} not in library")
         
         return float(retval)
 
@@ -431,52 +493,22 @@ class Supply():
 
     @exception_handler    
     def reset(self):
-        try:
-            self.connection.write("*RST")
-        except:
-            print("Unit could not by be reset using *RST command")
-
+        self.connection.write("*RST")
+        return True
+        
     @exception_handler    
     def clear(self):
-        try:
-            self.connection.write("*CLS")
-        except:
-            print("Unit could not by be cleared using *CLS command")
+        self.connection.write("*CLS")
+        return True
 
     @exception_handler    
-    def write(self, message):
+    def write(self, message : str) -> str:
         self.connection.write(message)
 
     @exception_handler    
-    def query(self, message):
+    def query(self, message) -> str:
         return self.connection.query(message)
 
-# E3632A = Supply("GPIB0::2::INSTR")
-# E3649A = Supply("GPIB0::5::INSTR")
-# E3631A = Supply("GPIB::6::INSTR")
-E36313A = Supply("USB0::0x2A8D::0x1202::MY61001838::INSTR")
-# E36234A = Supply("USB0::0x2A8D::0x3402::MY61001286::INSTR")
-
-
-
-# E36313A.select_output1()
-# E36313A.enable_output()
-# E36313A.set_voltage(6, 1)
-
-
-# E36313A.select_output2()
-# E36313A.enable_output()
-# E36313A.set_voltage(25)
-
-# E36313A.select_output3()
-# E36313A.enable_output()
-# E36313A.set_voltage(25)
-
-
-# E36234A.select_output1()
-# E36234A.enable_output()
-# E36234A.set_voltage(2, 1)
-
-# E36234A.select_output2()
-# E36234A.enable_output()
-# E36234A.set_voltage(2, 1)
+    @exception_handler    
+    def query_ascii_values(self, message) -> list:
+        return self.connection.query_ascii_values(message)

@@ -1,8 +1,8 @@
 from inspect import getmembers, isfunction
 
-from Multimeter import Multimeter
+from Supply import Supply
 
-functions_list = getmembers(Multimeter, isfunction)
+functions_list = getmembers(Supply, isfunction)
 
 for func in functions_list:
-    print(f"print(keithly2000.{func[0]}())")
+    print(f"{func[0]}()")
