@@ -255,6 +255,22 @@ class Multimeter():
         return False
         
 
+    @exception_handler
+    def fetch(self, function : str = "VOLTage:DC") -> float:
+        """Uses the FETCh? command to transfer the readings from the
+        multimeters internal memory to the multimeters output buffer where
+        you can read them into your bus controller.
+
+        Args:
+        none
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        retval = sys.maxsize 
+        retval = float(self.connection.query("FETCh?"))
+        return retval
+
 
     @exception_handler
     def fetch_voltage(self) -> float:
