@@ -1,8 +1,8 @@
 from inspect import getmembers, isfunction
 
-from Supply import Supply
+from Multimeter import Multimeter
 
-functions_list = getmembers(Supply, isfunction)
+functions_list = getmembers(Multimeter, isfunction)
 
 for func in functions_list:
     print(f"{func[0]}()")

@@ -10,19 +10,39 @@ The current methods available within the module are:
 
   Class Methods:
     __init__()
+    clear()
+    exception_handler()
     fetch_voltage()
     get_error()
     get_function()
     get_range()
+    get_thermocouple_type()
     get_voltage_range()
     identify()
     initiate()
     make_connection()
+    measure_current()
+    measure_current_AC()
+    measure_function()
+    measure_resistance()
     measure_voltage()
+    measure_voltage_AC()
+    query()
+    query_ascii_values()
+    read_current()
+    read_current_AC()
+    read_function()
+    read_resistance()
     read_voltage()
+    read_voltage_AC()
+    reset()
     set_function()
     set_range()
+    set_thermocouple_type()
+    set_thermocouple_unit()
     set_voltage_range()
+    turn_off_auto_range()
+    write()
 
   Typical usage example:
 
@@ -247,12 +267,6 @@ class Multimeter():
 
         Returns:
         The voltage or sys.maxsize to indicate there was an error
-
-        Raises:
-        ValueError: If the result from the multimeter couldn't be convereted to float.
-        pyvisa.errors.VisaIOError: 
-        pyvisa.errors.VisaIOErrorVI_ERROR_NLISTENERS:
-        pyvisa.errors.VI_ERROR_TMO
         """
         retval = sys.maxsize 
         
@@ -269,24 +283,21 @@ class Multimeter():
         
         return retval
         
-
     @exception_handler    
-    def read_voltage(self):
+    def read_function(self, function : str = "VOLTage:DC") -> float:
         """Perform measurement and acquire reading.
 
         Args:
-        minimum: The selected channel
+        none
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        float: the current voltage
         """
         retval = sys.maxsize
-
-        # If continuous initiation is enabled, (:INITiate:CONTinuous 
-        # ON), then the :INITiate command generates an error and ignores the Command. 
+        self.set_function(function)
+        
+        # If continuous initiation is enabled, then the :INITiate command 
+        # generates an error and ignores the Command. 
         if "2000" in self.instrument_ID:
             self.connection.write(":INITiate:CONTinuous OFF")
 
@@ -294,17 +305,124 @@ class Multimeter():
         return retval
 
     @exception_handler    
-    def measure_function(self, function = "VOLTage:DC"):
-        """Gets the selected function.
+    def read_voltage(self, function : str = "VOLTage:DC") -> float:
+        """Perform measurement and acquire reading.
 
         Args:
-        minimum: The selected channel
+        none
 
         Returns:
-        The current selected function.
+        float: the current voltage
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        
+        # If continuous initiation is enabled, then the :INITiate command 
+        # generates an error and ignores the Command. 
+        if "2000" in self.instrument_ID:
+            self.connection.write(":INITiate:CONTinuous OFF")
 
-        Raises:
-        Except: If the query fails.
+        retval = float(self.connection.query("READ?"))
+        return retval
+
+
+    @exception_handler    
+    def read_voltage_AC(self, function : str = "VOLTage:AC") -> float:
+        """Perform measurement and acquire reading.
+
+        Args:
+        none
+
+        Returns:
+        float: the current voltage
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        
+        # If continuous initiation is enabled, then the :INITiate command 
+        # generates an error and ignores the Command. 
+        if "2000" in self.instrument_ID:
+            self.connection.write(":INITiate:CONTinuous OFF")
+
+        retval = float(self.connection.query("READ?"))
+        return retval
+
+
+    @exception_handler    
+    def read_current(self, function : str = "CURRent:DC") -> float:
+        """Perform measurement and acquire reading.
+
+        Args:
+        none
+
+        Returns:
+        float: the current voltage
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        
+        # If continuous initiation is enabled, then the :INITiate command 
+        # generates an error and ignores the Command. 
+        if "2000" in self.instrument_ID:
+            self.connection.write(":INITiate:CONTinuous OFF")
+
+        retval = float(self.connection.query("READ?"))
+        return retval
+
+
+    @exception_handler    
+    def read_current_AC(self, function : str = "CURRent:AC") -> float:
+        """Perform measurement and acquire reading.
+
+        Args:
+        none
+
+        Returns:
+        float: the current voltage
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        
+        # If continuous initiation is enabled, then the :INITiate command 
+        # generates an error and ignores the Command. 
+        if "2000" in self.instrument_ID:
+            self.connection.write(":INITiate:CONTinuous OFF")
+
+        retval = float(self.connection.query("READ?"))
+        return retval
+
+    @exception_handler    
+    def read_resistance(self, function : str = "RESistance") -> float:
+        """Perform measurement and acquire reading.
+
+        Args:
+        none
+
+        Returns:
+        float: the current voltage
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        
+        # If continuous initiation is enabled, then the :INITiate command 
+        # generates an error and ignores the Command. 
+        if "2000" in self.instrument_ID:
+            self.connection.write(":INITiate:CONTinuous OFF")
+
+        retval = float(self.connection.query("READ?"))
+        return retval
+
+    @exception_handler    
+    def measure_function(self, function : str = "VOLTage:DC") -> float:
+        """This command combines all of the other signal 
+           oriented measurement commands to perform a 
+          “one-shot” measurement and acquire the reading.
+
+        Args:
+        function: a given function. VOLTage:DC by default
+
+        Returns:
+        float: The measurement result
         """
         retval = sys.maxsize
         self.set_function(function)
@@ -313,17 +431,14 @@ class Multimeter():
 
 
     @exception_handler    
-    def measure_voltage(self, function = "VOLTage:DC"):
-        """Gets the selected function.
+    def measure_voltage(self, function : str = "VOLTage:DC") -> float:
+        """Measures the DC voltage
 
         Args:
-        minimum: The selected channel
+        function: a given function. VOLTage:DC by default
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        float: The measurement result
         """
         retval = sys.maxsize
         self.set_function(function)
@@ -332,40 +447,14 @@ class Multimeter():
 
 
     @exception_handler    
-    def measure_voltage_AC(self, function = "VOLTage:AC"):
-        """Gets the selected function.
+    def measure_voltage_AC(self, function : str = "VOLTage:AC") -> float:
+        """Measures the AC voltage
 
         Args:
-        minimum: The selected channel
+        function: a given function. VOLTage:DC by default
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
-        """
-        retval = sys.maxsize
-
-
-
-        self.set_function(function)
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-
-        return retval
-
-
-    @exception_handler    
-    def measure_current(self, function = "CURRent:DC"):
-        """Gets the selected function.
-
-        Args:
-        minimum: The selected channel
-
-        Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        float: The measurement result
         """
         retval = sys.maxsize
         self.set_function(function)
@@ -374,17 +463,14 @@ class Multimeter():
 
 
     @exception_handler    
-    def measure_current_AC(self, function = "CURRent:AC"):
-        """Gets the selected function.
+    def measure_current(self, function : str = "CURRent:DC") -> float:
+        """Measures the DC current
 
         Args:
-        minimum: The selected channel
+        function: a given function. VOLTage:DC by default
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        float: The measurement result
         """
         retval = sys.maxsize
         self.set_function(function)
@@ -393,17 +479,14 @@ class Multimeter():
 
 
     @exception_handler    
-    def measure_resistance(self, function = "RESistance"):
-        """Gets the selected function.
+    def measure_current_AC(self, function : str = "CURRent:AC") -> float:
+        """Measures the AC voltage
 
         Args:
-        minimum: The selected channel
+        function: a given function. VOLTage:DC by default
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        float: The measurement result
         """
         retval = sys.maxsize
         self.set_function(function)
@@ -412,23 +495,36 @@ class Multimeter():
 
 
     @exception_handler    
-    def get_function(self):
+    def measure_resistance(self, function : str = "RESistance") -> float:
+        """Measures the resistance
+
+        Args:
+        function: a given function. VOLTage:DC by default
+
+        Returns:
+        float: The measurement result
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+        return retval
+
+
+    @exception_handler    
+    def get_function(self) -> str:
         """Gets the selected function.
 
         Args:
         minimum: The selected channel
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        str: The current selected function.
         """
         current_function = self.connection.query("FUNCtion?")
         return current_function.strip("\n")
 
     @exception_handler    
-    def set_function(self, function: str):
+    def set_function(self, function: str) -> str:
         """Gets the selected function.
 
         Args:
@@ -515,9 +611,6 @@ class Multimeter():
 
         Returns:
         bool if the identification was successful or not
-
-        Raises:
-        Except: If the identification fails.
         """
         self.connection.write(f"UNIT {unit}")
 
@@ -574,16 +667,13 @@ class Multimeter():
 
     @exception_handler    
     def set_voltage_range(self, voltage_range):
-        """Gets the selected function.
+        """Sets the voltage range .
 
         Args:
-        minimum: The selected channel
+        voltage_range: the given range
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        float: the current range
         """
         self.set_range(voltage_range, "VOLTage:DC")
         return self.get_voltage_range()
@@ -598,9 +688,6 @@ class Multimeter():
 
         Returns:
         The current selected function.
-
-        Raises:
-        Except: If the query fails.
         """
         retval = sys.maxsize 
         
@@ -625,27 +712,26 @@ class Multimeter():
         
 
     @exception_handler    
-    def get_error(self):
-        """Gets the selected function.
+    def get_error(self) -> str:
+        """Gets the first error in the error buffer.
 
         Args:
-        minimum: The selected channel
+        none
 
         Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
+        str: Either an error, or no error
         """
         # Get the error code from the multimeter
         error_string = self.connection.query("SYSTem:ERRor?").strip("\n")
+
         # If the error code is 0, we have no errors
         # If the error code is anything other than 0, we have errors
         
-        # Attempt to lookup the errors from the dictionary
         return error_string
             
 
+    """General PyVISA functions
+    """
     @exception_handler    
     def reset(self):
         self.connection.write("*RST")
@@ -671,5 +757,4 @@ class Multimeter():
     @exception_handler    
     def query_ascii_values(self, message) -> list:
         return self.connection.query_ascii_values(message)
-
 

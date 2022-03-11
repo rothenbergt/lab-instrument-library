@@ -9,11 +9,13 @@ Python library containing general functions to control lab supplies.
     The current methods available within the module are:
 
     Class Methods:
+        __init__()
         check_for_errors()
         clear()
         disable_output()
         enable_output()
         exception_handler()
+        get_output_state()
         get_voltage_range()
         identify()
         make_connection()
