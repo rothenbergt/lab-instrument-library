@@ -131,6 +131,10 @@ class Multimeter():
         if (not self.make_connection(identify)):
             sys.exit()
 
+        # Increase the timeout as some functions  
+        # such as Voltage:AC take longer to process
+        self.connection.timeout = 5000
+
     # Make the GPIB connection & set up the instrument
     def make_connection(self, identify: bool) -> bool:
         """Attempts to make a GPIB PyVISA connection with instrument .
@@ -289,6 +293,24 @@ class Multimeter():
         retval = float(self.connection.query("READ?"))
         return retval
 
+    @exception_handler    
+    def measure_function(self, function = "VOLTage:DC"):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+        return retval
+
 
     @exception_handler    
     def measure_voltage(self, function = "VOLTage:DC"):
@@ -304,9 +326,90 @@ class Multimeter():
         Except: If the query fails.
         """
         retval = sys.maxsize
-        
+        self.set_function(function)
         retval = float(self.connection.query(f"MEASure:{function}?"))
         return retval
+
+
+    @exception_handler    
+    def measure_voltage_AC(self, function = "VOLTage:AC"):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
+        retval = sys.maxsize
+
+
+
+        self.set_function(function)
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+
+        return retval
+
+
+    @exception_handler    
+    def measure_current(self, function = "CURRent:DC"):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+        return retval
+
+
+    @exception_handler    
+    def measure_current_AC(self, function = "CURRent:AC"):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+        return retval
+
+
+    @exception_handler    
+    def measure_resistance(self, function = "RESistance"):
+        """Gets the selected function.
+
+        Args:
+        minimum: The selected channel
+
+        Returns:
+        The current selected function.
+
+        Raises:
+        Except: If the query fails.
+        """
+        retval = sys.maxsize
+        self.set_function(function)
+        retval = float(self.connection.query(f"MEASure:{function}?"))
+        return retval
+
 
     @exception_handler    
     def get_function(self):
@@ -330,30 +433,27 @@ class Multimeter():
 
         Args:
         function: The selected channel
-                                            VOLTage:AC"
-                                            "VOLTage[:DC]"
-                                            "VOLTage[:DC]:RATio"
-                                            "CURRent:AC"
-                                            "CURRent[:DC]"
-                                            "FREQuency[:VOLT]"
-                                            "FREQuency:CURR"
-                                            "FRESistance"
-                                            "PERiod[:VOLT]"
-                                            "PERiod:CURR"
-                                            "RESistance"
-                                            "DIODe"
-                                            "TCOuple"
-                                            "TEMPerature"
-                                            "CONTinuity"
+                                            VOLTage:AC
+                                            VOLTage[:DC]
+                                            VOLTage[:DC]:RATio
+                                            CURRent:AC
+                                            CURRent[:DC]
+                                            FREQuency[:VOLT]
+                                            FREQuency:CURR
+                                            FRESistance
+                                            PERiod[:VOLT]
+                                            PERiod:CURR
+                                            RESistance
+                                            DIODe
+                                            TCOuple
+                                            TEMPerature
+                                            CONTinuity
         Returns:
         The current selected function.
 
         Raises:
         Except: If the query fails.
         """
-        '''
-
-        '''
         self.connection.write(f":conf:{function}")
 
         return self.get_function()
@@ -399,9 +499,11 @@ class Multimeter():
             print(f"Device {self.instrument_ID} not in library")
             return retval
 
+
     @exception_handler    
     def turn_off_auto_range(self):
         self.connection.write("VOLTage:DC:RANGe:AUTO OFF")
+
 
     @exception_handler    
     def set_thermocouple_unit(self, unit: str):
@@ -417,9 +519,8 @@ class Multimeter():
         Raises:
         Except: If the identification fails.
         """
-
-
         self.connection.write(f"UNIT {unit}")
+
 
     @exception_handler    
     def get_voltage_range(self):
@@ -435,6 +536,7 @@ class Multimeter():
         Except: If the query fails.
         """
         return self.get_range("VOLTage:DC")
+
 
     @exception_handler    
     def get_range(self, function):
@@ -485,6 +587,7 @@ class Multimeter():
         """
         self.set_range(voltage_range, "VOLTage:DC")
         return self.get_voltage_range()
+
 
     @exception_handler    
     def set_range(self, voltage_range: float, function):
