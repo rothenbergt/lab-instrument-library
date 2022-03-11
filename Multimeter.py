@@ -494,7 +494,6 @@ class Multimeter():
         float: The measurement result
         """
         retval = sys.maxsize
-        self.set_function(function)
         retval = float(self.connection.query(f"MEASure:{function}?"))
         return retval
 
