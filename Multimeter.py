@@ -12,7 +12,12 @@ The current methods available within the module are:
     __init__()
     clear()
     exception_handler()
+    fetch()
+    fetch_current()
+    fetch_current_AC()
+    fetch_resistance()
     fetch_voltage()
+    fetch_voltage_AC()
     get_error()
     get_function()
     get_range()
@@ -100,6 +105,8 @@ class Multimeter():
         pyvisa.errors.VI_ERROR_TMO:
         """
         def inner_function(self, *args, **kw):
+
+            retval = sys.maxsize
             try:
                 return func(self, *args, **kw)
             except ValueError as ex:
@@ -108,6 +115,7 @@ class Multimeter():
                 return retval
             except TypeError as ex:
                 print("Wrong param Type")
+                return retval
             except pyvisa.errors.VisaIOError as ex:
                 print(f"Exception {type(ex)} {ex.abbreviation}")
 
@@ -120,9 +128,10 @@ class Multimeter():
                 if "VI_ERROR_RSRC_NFOUND" in ex.abbreviation:
                     print("Resource not found")
 
-                return sys.maxsize
+                return retval
             except Exception as ex:
                 print(f"This was an exception we were not prepared for {type(ex)}, {ex}")
+                return retval
 
         return inner_function
 
@@ -234,26 +243,8 @@ class Multimeter():
         Except: If the query fails.
         """
         
-        if "2000" in self.instrument_ID:
-            self.connection.write("INIT")
-            return True
-
-        elif "2110" in self.instrument_ID:
-            self.connection.write("INIT")
-            return True
-
-        elif "4050" in self.instrument_ID:
-            self.connection.write("INIT")
-            return True
-
-        elif "34401A":
-            self.connection.write("INIT")
-            return True
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-        
-        return False
-        
+        self.connection.write("INIT")
+        return True
 
     @exception_handler
     def fetch(self, function : str = "VOLTage:DC") -> float:
@@ -268,12 +259,63 @@ class Multimeter():
         The return from instrument or sys.maxsize to indicate there was an error
         """
         retval = sys.maxsize 
+        self.set_function(function)
+        self.initiate()
         retval = float(self.connection.query("FETCh?"))
         return retval
 
+    @exception_handler
+    def fetch_voltage_AC(self, function : str = "VOLTage:AC") -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch(function)
 
     @exception_handler
-    def fetch_voltage(self) -> float:
+    def fetch_current_AC(self, function : str = "CURRent:AC") -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch(function)
+
+
+    @exception_handler
+    def fetch_current(self, function : str = "CURRent:DC") -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch(function)
+
+    @exception_handler
+    def fetch_resistance(self, function : str = "RESistance") -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch(function)
+
+
+    @exception_handler
+    def fetch_voltage(self, function : str = "VOLTage:DC") -> float:
         """Uses the FETCh? command to transfer the readings from the
         multimeters internal memory to the multimeters output buffer where
         you can read them into your bus controller.
@@ -284,20 +326,8 @@ class Multimeter():
         Returns:
         The voltage or sys.maxsize to indicate there was an error
         """
-        retval = sys.maxsize 
-        
-        if "2000" in self.instrument_ID:
-            retval = float(self.connection.query("FETCh?"))
-        elif "2110" in self.instrument_ID:
-            retval = float(self.connection.query("FETCh?"))
-        elif "4050" in self.instrument_ID:
-            retval = float(self.connection.query("FETCh?"))
-        elif "34401A":
-            retval = float(self.connection.query("FETCh?"))
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-        
-        return retval
+        return self.fetch(function)
+
         
     @exception_handler    
     def read_function(self, function : str = "VOLTage:DC") -> float:
@@ -331,7 +361,7 @@ class Multimeter():
         float: the current voltage
         """
         retval = sys.maxsize
-        self.set_function(function)
+        self.set_function(function) #TODO change so if we are already on function DONT RESET IT
         
         # If continuous initiation is enabled, then the :INITiate command 
         # generates an error and ignores the Command. 
@@ -616,6 +646,10 @@ class Multimeter():
     def turn_off_auto_range(self):
         self.connection.write("VOLTage:DC:RANGe:AUTO OFF")
 
+    @exception_handler    
+    def get_auto_range_state(self):
+        return self.connection.query("VOLTage:DC:RANGe:AUTO?").strip("\n")
+
 
     @exception_handler    
     def set_thermocouple_unit(self, unit: str):
@@ -746,8 +780,6 @@ class Multimeter():
         return error_string
             
 
-    """General PyVISA functions
-    """
     @exception_handler    
     def reset(self):
         self.connection.write("*RST")
@@ -759,6 +791,13 @@ class Multimeter():
         self.connection.write("*CLS")
         return True
 
+
+    """General PyVISA functions
+
+        write
+        query
+        query_ascii_values
+    """
 
     @exception_handler    
     def write(self, message : str) -> str:
@@ -773,4 +812,3 @@ class Multimeter():
     @exception_handler    
     def query_ascii_values(self, message) -> list:
         return self.connection.query_ascii_values(message)
-
