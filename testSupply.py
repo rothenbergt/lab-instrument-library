@@ -20,7 +20,7 @@ voltage_range = mult.set_voltage_range(4)
 
 while True:
     print(mult.get_auto_range_state())
-    res = mult.read_voltage()
+    res = mult.read_voltage_AC()
     print(res)
     
 

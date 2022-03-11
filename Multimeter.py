@@ -351,7 +351,7 @@ class Multimeter():
         return retval
 
     @exception_handler    
-    def read_voltage(self, function : str = "VOLTage:DC") -> float:
+    def read_voltage(self, function : str = "VOLT") -> float:
         """Perform measurement and acquire reading.
 
         Args:
@@ -361,8 +361,10 @@ class Multimeter():
         float: the current voltage
         """
         retval = sys.maxsize
-        self.set_function(function) #TODO change so if we are already on function DONT RESET IT
         
+        if (self.get_function() != "VOLT"):
+            self.set_function(function)
+
         # If continuous initiation is enabled, then the :INITiate command 
         # generates an error and ignores the Command. 
         if "2000" in self.instrument_ID:
@@ -373,7 +375,7 @@ class Multimeter():
 
 
     @exception_handler    
-    def read_voltage_AC(self, function : str = "VOLTage:AC") -> float:
+    def read_voltage_AC(self, function : str = "VOLT:AC") -> float:
         """Perform measurement and acquire reading.
 
         Args:
@@ -383,7 +385,9 @@ class Multimeter():
         float: the current voltage
         """
         retval = sys.maxsize
-        self.set_function(function)
+
+        if (self.get_function() != "VOLT:AC"):
+            self.set_function(function)
         
         # If continuous initiation is enabled, then the :INITiate command 
         # generates an error and ignores the Command. 
@@ -459,7 +463,7 @@ class Multimeter():
         return retval
 
     @exception_handler    
-    def measure_function(self, function : str = "VOLTage:DC") -> float:
+    def measure_function(self, function : str = "VOLT") -> float:
         """This command combines all of the other signal 
            oriented measurement commands to perform a 
           “one-shot” measurement and acquire the reading.
@@ -471,7 +475,10 @@ class Multimeter():
         float: The measurement result
         """
         retval = sys.maxsize
-        self.set_function(function)
+
+        if (self.get_function() != function):
+            self.set_function(function)
+
         retval = float(self.connection.query(f"MEASure:{function}?"))
         return retval
 
@@ -567,7 +574,7 @@ class Multimeter():
         str: The current selected function.
         """
         current_function = self.connection.query("FUNCtion?")
-        return current_function.strip("\n")
+        return current_function.strip("\n").strip("\"")
 
     @exception_handler    
     def set_function(self, function: str) -> str:
