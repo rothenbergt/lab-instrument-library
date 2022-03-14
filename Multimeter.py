@@ -272,15 +272,13 @@ class Multimeter():
 
     @exception_handler
     def fetch_voltage(self) -> float:
-        """Uses the FETCh? command to transfer the readings from the
-        multimeters internal memory to the multimeters output buffer where
-        you can read them into your bus controller.
+        """Fetch DC voltage reading
 
         Args:
         none
 
         Returns:
-        The voltage or sys.maxsize to indicate there was an error
+        The most recent DC voltage measurement
         """
         return self.fetch("VOLT")
 
@@ -290,49 +288,49 @@ class Multimeter():
         """Fetch AC voltage reading
 
         Args:
-        str: function
+        none
 
         Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
+        The most recent AC voltage measurement
         """
         return self.fetch("VOLT:AC")
 
 
     @exception_handler
     def fetch_current_AC(self) -> float:
-        """Fetch AC voltage reading
+        """Fetch AC current reading
 
         Args:
-        str: function
+        none
 
         Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
+        The most recent AC current measurement
         """
         return self.fetch("CURR:AC")
 
 
     @exception_handler
     def fetch_current(self) -> float:
-        """Fetch AC voltage reading
+        """Fetch DC current reading
 
         Args:
-        str: function
+        none
 
         Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
+        The most recent DC current measurement
         """
         return self.fetch("CURR")
 
 
     @exception_handler
     def fetch_resistance(self) -> float:
-        """Fetch AC voltage reading
+        """Fetch resistance reading
 
         Args:
-        str: function
+        none
 
         Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
+        The most recent resistance measurement
         """
         return self.fetch("RES")
 
@@ -342,7 +340,7 @@ class Multimeter():
         """Perform measurement and acquire reading.
 
         Args:
-        none
+        function: string containing the function name
 
         Returns:
         float: the current voltage
@@ -457,7 +455,7 @@ class Multimeter():
         """Measures the DC voltage
 
         Args:
-        function: a given function. VOLTage:DC by default
+        none
 
         Returns:
         float: The measurement result
@@ -470,7 +468,7 @@ class Multimeter():
         """Measures the AC voltage
 
         Args:
-        function: a given function. VOLTage:DC by default
+        none
 
         Returns:
         float: The measurement result
@@ -483,7 +481,7 @@ class Multimeter():
         """Measures the DC current
 
         Args:
-        function: a given function. VOLTage:DC by default
+        none
 
         Returns:
         float: The measurement result
@@ -496,7 +494,7 @@ class Multimeter():
         """Measures the AC voltage
 
         Args:
-        function: a given function. VOLTage:DC by default
+        none
 
         Returns:
         float: The measurement result
@@ -509,7 +507,7 @@ class Multimeter():
         """Measures the resistance
 
         Args:
-        function: a given function. VOLTage:DC by default
+        none
 
         Returns:
         float: The measurement result
@@ -537,21 +535,21 @@ class Multimeter():
 
         Args:
         function: The selected channel
-                                            VOLTage:AC
-                                            VOLTage[:DC]
-                                            VOLTage[:DC]:RATio
-                                            CURRent:AC
-                                            CURRent[:DC]
-                                            FREQuency[:VOLT]
-                                            FREQuency:CURR
-                                            FRESistance
-                                            PERiod[:VOLT]
-                                            PERiod:CURR
-                                            RESistance
-                                            DIODe
-                                            TCOuple
-                                            TEMPerature
-                                            CONTinuity
+                                        VOLTage:AC
+                                        VOLTage[:DC]
+                                        VOLTage[:DC]:RATio
+                                        CURRent:AC
+                                        CURRent[:DC]
+                                        FREQuency[:VOLT]
+                                        FREQuency:CURR
+                                        FRESistance
+                                        PERiod[:VOLT]
+                                        PERiod:CURR
+                                        RESistance
+                                        DIODe
+                                        TCOuple
+                                        TEMPerature
+                                        CONTinuity
         Returns:
         The current selected function.
 
@@ -580,6 +578,7 @@ class Multimeter():
         else:
             print(f"Device {self.instrument_ID} not in library")
             return retval     
+
 
     @exception_handler    
     def set_thermocouple_type(self, thermocouple_type: str) -> str:
