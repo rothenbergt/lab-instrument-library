@@ -136,7 +136,11 @@ class SMU(LibraryTemplate):
         """
         def inner_function(self, *args, **kw):
             try:
-                return func(self, *args, **kw)
+                retval = sys.maxsize
+                # print(f"{func.__name__}")
+                retval = func(self, *args, **kw)
+                # self.check_for_errors(show = True)
+                return retval
             except ValueError as ex:
                 print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
                         in class {self.__class__.__name__}, method {func.__name__}")
@@ -251,38 +255,50 @@ class SMU(LibraryTemplate):
 
 
     @exception_handler
+    def set_voltage_limit(self, channel = 1, voltage = 0):
+        if self.get_function(channel) == "CURR":
+            self.connection.write(f":SENS{channel}:VOLT:PROT {voltage}")    
+        else:
+            print("ERROR Cannot set voltage limit we are not on current mode")
+
+    @exception_handler
     def set_ch1_voltage_limit(self, voltage = 0):
         if self.get_function(channel = 1) == "CURR":
             self.connection.write(f":SENS:VOLT:PROT {voltage}")    
         else:
             print("ERROR Cannot set voltage limit we are not on current mode")
 
-
-    def set_ch1_current_limit(self, current = 0):
-        if self.connection.query(":SOUR:FUNC:MODE?")[:-1] == "VOLT":
-            self.connection.write(f":SENS:CURR:PROT {current}")       
-        else:
-            print("ERROR Cannot set current limit we are not on voltage mode")
+    @exception_handler
     def set_ch2_voltage_limit(self, voltage = 1):
-        if self.connection.query(":SOUR2:FUNC:MODE?")[:-1] == "CURR":
+        if self.get_function(channel = 2) == "CURR":
             self.connection.write(f":SENS2:VOLT:PROT {voltage}")    
         else:
             print("ERROR Cannot set voltage limit we are not on current mode")
-    def set_ch2_current_limit(self, current = 1):
-        if self.connection.query(":SOUR2:FUNC:MODE?")[:-1] == "VOLT":
-            self.connection.write(f":SENS2:CURR:PROT {current}")       
-        else:
-            print("ERROR Cannot set current limit we are not on voltage mode")
+
+
+    @exception_handler
     def set_current_limit(self, channel = 1, current = 0):
-        if self.connection.query(f":SOUR{channel}:FUNC:MODE?")[:-1] == "VOLT":
+        if self.get_function(channel) == "VOLT":
             self.connection.write(f":SENS{channel}:CURR:PROT {current}")       
         else:
             print("ERROR Cannot set current limit we are not on voltage mode")
-    def set_voltage_limit(self, channel = 1, voltage = 0):
-        if self.connection.query(f":SOUR{channel}:FUNC:MODE?")[:-1] == "CURR":
-            self.connection.write(f":SENS{channel}:VOLT:PROT {voltage}")    
+
+
+    @exception_handler
+    def set_ch1_current_limit(self, current = 0):
+        if self.get_function(channel = 1) == "VOLT":
+            self.connection.write(f":SENS:CURR:PROT {current}")       
         else:
-            print("ERROR Cannot set voltage limit we are not on current mode")
+            print("ERROR Cannot set current limit we are not on voltage mode")
+
+
+    @exception_handler
+    def set_ch2_current_limit(self, current = 1):
+        if self.get_function(channel = 2) == "VOLT":
+            self.connection.write(f":SENS2:CURR:PROT {current}")       
+        else:
+            print("ERROR Cannot set current limit we are not on voltage mode")
+
 
 
     @exception_handler
@@ -297,173 +313,123 @@ class SMU(LibraryTemplate):
     def get_ch2_voltage(self):
         return self.get_voltage(channel = 2)
 
+    @exception_handler
     def get_current(self, channel = 1):
         return float(self.connection.query(f":meas:curr? (@{channel})"))
-    
+
+    @exception_handler
     def get_ch1_current(self):
         return self.get_current(channel = 1)
 
+    @exception_handler
     def get_ch2_current(self):
         return self.get_current(channel = 2)
-    
+
+    @exception_handler    
     def get_all_measurements(self, channel = 1):
-        measure_result = self.connection.query(f":MEAS? (@{channel})")
-        measure_result = measure_result.split(",")
-        measure_result = [float(x) for x in measure_result]
-        return measure_result
+        return self.connection.query_ascii_values(f":MEAS? (@{channel})")
 
-    
+    @exception_handler
     def get_all_measurements_both_channels(self):
-            measure_result = self.connection.query(f":MEAS? (@1,2)")            
-            measure_result = measure_result.split(",")
-            measure_result = [float(x) for x in measure_result]
-            return measure_result
+        return self.connection.query_ascii_values(f":MEAS? (@1, 2)")
 
+    @exception_handler
     def get_voltage_current_both_channels(self):
         measure_results = self.get_all_measurements_both_channels()
         return measure_results[0], measure_results[1], measure_results[6], measure_results[7]
 
 
-    
+    @exception_handler    
     def get_ch1_voltage_and_current(self):
-        
-        # Attempt to get all measurements
         measure_result = self.get_all_measurements(channel = 1)
-        
-        # If measuring caused an error, return sys.maxsize as a bad value
-        if measure_result is None:
-            return sys.maxsize, sys.maxsize
-        else:
-            return measure_result[0], measure_result[1]
+        return measure_result[0], measure_result[1]
     
-    
+    @exception_handler    
     def get_ch2_voltage_and_current(self):
         measure_result = self.get_all_measurements(channel = 2)
         return measure_result[0], measure_result[1]
-    
+
+    @exception_handler
     def get_both_channel_voltage(self):
-        results = self.connection.query(":meas:volt? (@1,2)")[:-1]
-        split_results = results.split(",")
-        return float(split_results[0]), float(split_results[1])
+        results = self.connection.query_ascii_values(":meas:volt? (@1,2)")[:-1]
+        return (split_results[0], split_results[1])
 
+    @exception_handler
+    def fetch_both_channels(self):
+        results = self.connection.query_ascii_values(":fetch? (@1,2)")[:-1]
+        return results[0], results[1], results[6], results[7]
 
-    def fetchBothChannel(self):
-        results = self.connection.query(":fetch? (@1,2)")[:-1]
-        split_results = results.split(",")
-        split_results = [float(x) for x in split_results]
-        return split_results[0], split_results[1], split_results[6], split_results[7]
+    @exception_handler
+    def read_both_channels(self):
+        results = self.connection.query_ascii_values(":read? (@1,2)")[:-1]
+        return results[0], results[1], results[6], results[7]
 
-    def readBothChannel(self):
-        results = self.connection.query(":read? (@1,2)")[:-1]
-        split_results = results.split(",")
-        split_results = [float(x) for x in split_results]
-        return split_results[0], split_results[1], split_results[6], split_results[7]
-
-
+    @exception_handler
     def get_both_channel_current(self):
-        results = self.connection.query(":meas:curr? (@1,2)")[:-1]
-        split_results = results.split(",")
-        return float(split_results[0]), float(split_results[1])    
+        results = self.connection.query_ascii_values(":meas:curr? (@1,2)")[:-1]
+        return results[0], results[1]
     
+    @exception_handler
     def get_ch1_power(self):
         voltage, current = self.get_ch1_voltage_and_current()
         return voltage*current
+
+    @exception_handler
     def get_ch2_power(self):
         voltage, current = self.get_ch2_voltage_and_current()
         return voltage*current
     
-    def get_voltage_array(self, channel = 1):
-        voltage_array = self.connection.query(f":FETC:ARR:VOLT? (@{channel})")
-        voltage_array_split = voltage_array.split(",")
-        voltage_array = [float(x) for x in voltage_array_split]
-        return voltage_array
-    def get_current_array(self, channel = 1):
-        current_array = self.connection.query(f":FETC:ARR:CURR? (@{channel})")
-        current_array_split = current_array.split(",")
-        current_array = [float(x) for x in current_array_split]
-        return current_array
+    # def get_voltage_array(self, channel = 1):
+    #     voltage_array = self.connection.query(f":FETC:ARR:VOLT? (@{channel})")
+    #     voltage_array_split = voltage_array.split(",")
+    #     voltage_array = [float(x) for x in voltage_array_split]
+    #     return voltage_array
+
+
+    # def get_current_array(self, channel = 1):
+    #     current_array = self.connection.query(f":FETC:ARR:CURR? (@{channel})")
+    #     current_array_split = current_array.split(",")
+    #     current_array = [float(x) for x in current_array_split]
+    #     return current_array
     
-    
+
+    @exception_handler
     def set_ch1_4_wire(self):
         self.connection.write(":SENS:REM ON")
         
+    @exception_handler
     def set_ch2_4_wire(self):
         self.connection.write(":SENS2:REM ON")
     
+
+    @exception_handler
     def set_ch1_2_wire(self):
         self.connection.write(":SENS:REM OFF")
 
+    @exception_handler
     def set_ch2_2_wire(self):
         self.connection.write(":SENS2:REM OFF")
         
+    @exception_handler
+    def set_low_terminal_state(self, channel = 1, function = "FLO"):
+        self.connection.write(f"OUTP{channel}:LOW {function}")
+        
+    @exception_handler
     def set_ch1_floating(self):
-        self.connection.write(":OUTP:LOW FLO")
+        self.set_low_terminal_state(1, "FLO")
     
+    @exception_handler
     def set_ch2_floating(self):
-        self.connection.write(":OUTP2:LOW FLO")
-        
-    def set_floating(self, channel = 1):
-        self.connection.write(f"OUTP{channel}:LOW FLO")
+        self.set_low_terminal_state(2, "FLO")
     
-    def find_best_current(self, goal):      
-        # The best current will start out as the minimum value (it can only get larger)
-        best_current = -sys.maxsize
-        
-        # The best power will start out as the maximum value (it can only get smaller)
-        best_power = sys.maxsize
-        
-        # Set the curr_current to near the goal
-        curr_current = goal / 2
-        
-        for i in range(0, 10000):
-            
-            # Increase the current
-            curr_current += 0.01 
-            self.set_ch1_current(curr_current)
-            time.sleep(0.01)
-            
-            # Calculate the power
-            power = self.get_ch1_power()
+    @exception_handler
+    def set_ch1_ground(self):
+        self.set_low_terminal_state(1, "GRO")
+    
+    @exception_handler
+    def set_ch2_ground(self):
+        self.set_low_terminal_state(2, "GRO")
 
-            # If we are closer to our goal, update our best values 
-            if abs(goal - power) < best_power:
-                best_power = goal-power
-                best_current = curr_current
-            
-            # If we've moved too far, exit
-            if (power > goal * 1.05):
-                # Reduce the current to allow for fine grain tuning
-                curr_current =  best_current - 0.1
-                break
-            
-            if curr_current > goal + 0.5:
-                # Reduce the current to allow for fine grain tuning
-                curr_current = best_current - 0.1
-                break
-                
-        # self.set_ch1_current(best_current)
-
-        for i in range(0, 10000):
-           
-            # Increase the current
-            curr_current += 0.001
-            self.set_ch1_current(curr_current)
-            time.sleep(0.01)
-            
-            # Calculate the power
-            power = self.get_ch1_power()
-            
-            # If we are closer to our goal, update our best values 
-            if abs(goal - power) < best_power:
-                best_power = goal-power
-                best_current = curr_current
-           
-            # If we've moved too far, exit    
-            if (power > goal * 1.05) or (curr_current > goal + 0.5):
-                break
-            
-        print(f"Best Current {round(best_current, 4)}A")
-        self.set_ch1_current(best_current)
 
     def check_for_errors(self, show = False):
         try:
@@ -526,8 +492,20 @@ class SMU(LibraryTemplate):
         self.connection.write(f"OUTP{channel}:HCAP ON")
     def turn_off_high_capacitance_mode(self, channel = 1):
         self.connection.write(f"OUTP{channel}:HCAP OFF")   
-    def turn_on_high_z(self, channel = 1):
-        self.connection.write(f"OUTP{channel}:OFF:MODE HIZ")   
+
+    def set_output_hiz(self, channel = 1):
+        self.set_output_off_status(channel, "HIZ")
+
+    def set_output_zero(self, channel = 1):
+        self.set_output_off_status(channel, "ZERO")
+
+    def set_output_normal(self, channel = 1):
+        self.set_output_off_status(channel, "NORM")
+
+    def set_output_off_status(self, channel = 1, function = "HIZ"):
+        self.connection.write(f"OUTP{channel}:OFF:MODE {function}")   
+
+
     def turn_on_4_wire(self, channel = 1):
         self.connection.write(f":SENS{channel}:REM ON")  
     def set_NPLC(self, NPLC, channel = 1):
