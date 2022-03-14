@@ -246,8 +246,9 @@ class Multimeter():
         self.connection.write("INIT")
         return True
 
+    
     @exception_handler
-    def fetch(self, function : str = "VOLTage:DC") -> float:
+    def fetch(self, function : str = "VOLT") -> float:
         """Uses the FETCh? command to transfer the readings from the
         multimeters internal memory to the multimeters output buffer where
         you can read them into your bus controller.
@@ -258,64 +259,19 @@ class Multimeter():
         Returns:
         The return from instrument or sys.maxsize to indicate there was an error
         """
-        retval = sys.maxsize 
-        self.set_function(function)
+        # If the function is already set, we don't want to set it again.
+        # The reason is that each time the function is set, the config
+        # is also reset. An example is auto range. When the function is set
+        # Autorange is automatically turned back to ON.
+        if (self.get_function() != function):
+            self.set_function(function)
+
         self.initiate()
-        retval = float(self.connection.query("FETCh?"))
-        return retval
-
-    @exception_handler
-    def fetch_voltage_AC(self, function : str = "VOLTage:AC") -> float:
-        """Fetch AC voltage reading
-
-        Args:
-        str: function
-
-        Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
-        """
-        return self.fetch(function)
-
-    @exception_handler
-    def fetch_current_AC(self, function : str = "CURRent:AC") -> float:
-        """Fetch AC voltage reading
-
-        Args:
-        str: function
-
-        Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
-        """
-        return self.fetch(function)
+        return float(self.connection.query("FETCh?"))
 
 
     @exception_handler
-    def fetch_current(self, function : str = "CURRent:DC") -> float:
-        """Fetch AC voltage reading
-
-        Args:
-        str: function
-
-        Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
-        """
-        return self.fetch(function)
-
-    @exception_handler
-    def fetch_resistance(self, function : str = "RESistance") -> float:
-        """Fetch AC voltage reading
-
-        Args:
-        str: function
-
-        Returns:
-        The return from instrument or sys.maxsize to indicate there was an error
-        """
-        return self.fetch(function)
-
-
-    @exception_handler
-    def fetch_voltage(self, function : str = "VOLTage:DC") -> float:
+    def fetch_voltage(self) -> float:
         """Uses the FETCh? command to transfer the readings from the
         multimeters internal memory to the multimeters output buffer where
         you can read them into your bus controller.
@@ -326,11 +282,63 @@ class Multimeter():
         Returns:
         The voltage or sys.maxsize to indicate there was an error
         """
-        return self.fetch(function)
+        return self.fetch("VOLT")
 
-        
+
+    @exception_handler
+    def fetch_voltage_AC(self) -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch("VOLT:AC")
+
+
+    @exception_handler
+    def fetch_current_AC(self) -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch("CURR:AC")
+
+
+    @exception_handler
+    def fetch_current(self) -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch("CURR")
+
+
+    @exception_handler
+    def fetch_resistance(self) -> float:
+        """Fetch AC voltage reading
+
+        Args:
+        str: function
+
+        Returns:
+        The return from instrument or sys.maxsize to indicate there was an error
+        """
+        return self.fetch("RES")
+
+
     @exception_handler    
-    def read_function(self, function : str = "VOLTage:DC") -> float:
+    def read_function(self, function : str = "VOLT") -> float:
         """Perform measurement and acquire reading.
 
         Args:
@@ -339,43 +347,24 @@ class Multimeter():
         Returns:
         float: the current voltage
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        
-        # If continuous initiation is enabled, then the :INITiate command 
-        # generates an error and ignores the Command. 
-        if "2000" in self.instrument_ID:
-            self.connection.write(":INITiate:CONTinuous OFF")
 
-        retval = float(self.connection.query("READ?"))
-        return retval
-
-    @exception_handler    
-    def read_voltage(self, function : str = "VOLT") -> float:
-        """Perform measurement and acquire reading.
-
-        Args:
-        none
-
-        Returns:
-        float: the current voltage
-        """
-        retval = sys.maxsize
-        
-        if (self.get_function() != "VOLT"):
+        # If the function is already set, we don't want to set it again.
+        # The reason is that each time the function is set, the config
+        # is also reset. An example is auto range. When the function is set
+        # Autorange is automatically turned back to ON.
+        if (self.get_function() != function):
             self.set_function(function)
-
+        
         # If continuous initiation is enabled, then the :INITiate command 
         # generates an error and ignores the Command. 
         if "2000" in self.instrument_ID:
             self.connection.write(":INITiate:CONTinuous OFF")
 
-        retval = float(self.connection.query("READ?"))
-        return retval
+        return float(self.connection.query("READ?"))
 
 
     @exception_handler    
-    def read_voltage_AC(self, function : str = "VOLT:AC") -> float:
+    def read_voltage(self) -> float:
         """Perform measurement and acquire reading.
 
         Args:
@@ -384,18 +373,20 @@ class Multimeter():
         Returns:
         float: the current voltage
         """
-        retval = sys.maxsize
+        return self.read_function("VOLT")
 
-        if (self.get_function() != "VOLT:AC"):
-            self.set_function(function)
-        
-        # If continuous initiation is enabled, then the :INITiate command 
-        # generates an error and ignores the Command. 
-        if "2000" in self.instrument_ID:
-            self.connection.write(":INITiate:CONTinuous OFF")
 
-        retval = float(self.connection.query("READ?"))
-        return retval
+    @exception_handler    
+    def read_voltage_AC(self) -> float:
+        """Perform measurement and acquire reading.
+
+        Args:
+        none
+
+        Returns:
+        float: the current voltage
+        """
+        return self.read_function("VOLT:AC")
 
 
     @exception_handler    
@@ -408,16 +399,8 @@ class Multimeter():
         Returns:
         float: the current voltage
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        
-        # If continuous initiation is enabled, then the :INITiate command 
-        # generates an error and ignores the Command. 
-        if "2000" in self.instrument_ID:
-            self.connection.write(":INITiate:CONTinuous OFF")
+        return self.read_function("CURR")
 
-        retval = float(self.connection.query("READ?"))
-        return retval
 
 
     @exception_handler    
@@ -430,16 +413,8 @@ class Multimeter():
         Returns:
         float: the current voltage
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        
-        # If continuous initiation is enabled, then the :INITiate command 
-        # generates an error and ignores the Command. 
-        if "2000" in self.instrument_ID:
-            self.connection.write(":INITiate:CONTinuous OFF")
+        return self.read_function("CURR:AC")
 
-        retval = float(self.connection.query("READ?"))
-        return retval
 
     @exception_handler    
     def read_resistance(self, function : str = "RESistance") -> float:
@@ -451,16 +426,8 @@ class Multimeter():
         Returns:
         float: the current voltage
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        
-        # If continuous initiation is enabled, then the :INITiate command 
-        # generates an error and ignores the Command. 
-        if "2000" in self.instrument_ID:
-            self.connection.write(":INITiate:CONTinuous OFF")
+        return self.read_function("RES")
 
-        retval = float(self.connection.query("READ?"))
-        return retval
 
     @exception_handler    
     def measure_function(self, function : str = "VOLT") -> float:
@@ -474,17 +441,19 @@ class Multimeter():
         Returns:
         float: The measurement result
         """
-        retval = sys.maxsize
 
+        # If the function is already set, we don't want to set it again.
+        # The reason is that each time the function is set, the config
+        # is also reset. An example is auto range. When the function is set
+        # Autorange is automatically turned back to ON.
         if (self.get_function() != function):
             self.set_function(function)
 
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-        return retval
+        return float(self.connection.query(f"MEASure:{function}?"))
 
 
     @exception_handler    
-    def measure_voltage(self, function : str = "VOLTage:DC") -> float:
+    def measure_voltage(self) -> float:
         """Measures the DC voltage
 
         Args:
@@ -493,13 +462,11 @@ class Multimeter():
         Returns:
         float: The measurement result
         """
-        retval = sys.maxsize
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-        return retval
+        return self.measure_function("VOLT")
 
 
     @exception_handler    
-    def measure_voltage_AC(self, function : str = "VOLTage:AC") -> float:
+    def measure_voltage_AC(self) -> float:
         """Measures the AC voltage
 
         Args:
@@ -508,14 +475,11 @@ class Multimeter():
         Returns:
         float: The measurement result
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-        return retval
+        return self.measure_function("VOLT:AC")
 
 
     @exception_handler    
-    def measure_current(self, function : str = "CURRent:DC") -> float:
+    def measure_current(self) -> float:
         """Measures the DC current
 
         Args:
@@ -524,10 +488,7 @@ class Multimeter():
         Returns:
         float: The measurement result
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-        return retval
+        return self.measure_function("CURR")
 
 
     @exception_handler    
@@ -540,10 +501,7 @@ class Multimeter():
         Returns:
         float: The measurement result
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-        return retval
+        return self.measure_function("CURR:AC")
 
 
     @exception_handler    
@@ -556,10 +514,7 @@ class Multimeter():
         Returns:
         float: The measurement result
         """
-        retval = sys.maxsize
-        self.set_function(function)
-        retval = float(self.connection.query(f"MEASure:{function}?"))
-        return retval
+        return self.measure_function("RES")
 
 
     @exception_handler    
@@ -574,6 +529,7 @@ class Multimeter():
         """
         current_function = self.connection.query("FUNCtion?")
         return current_function.strip("\n").strip("\"")
+
 
     @exception_handler    
     def set_function(self, function: str) -> str:
@@ -799,7 +755,6 @@ class Multimeter():
 
 
     """General PyVISA functions
-
         write
         query
         query_ascii_values
