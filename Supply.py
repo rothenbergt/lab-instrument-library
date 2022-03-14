@@ -493,23 +493,34 @@ class Supply():
         '''
         print(self.connection.query("SYSTem:ERROR?"))
 
+
     @exception_handler    
     def reset(self):
         self.connection.write("*RST")
         return True
+        
         
     @exception_handler    
     def clear(self):
         self.connection.write("*CLS")
         return True
 
+
+    """General PyVISA functions
+        write
+        query
+        query_ascii_values
+    """
+
     @exception_handler    
     def write(self, message : str) -> str:
         self.connection.write(message)
 
+
     @exception_handler    
     def query(self, message) -> str:
         return self.connection.query(message)
+
 
     @exception_handler    
     def query_ascii_values(self, message) -> list:

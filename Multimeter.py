@@ -592,23 +592,18 @@ class Multimeter():
             retval = self.get_thermocouple_type()
             return retval
 
-        elif "4050" in self.instrument_ID:
-            retval = float(self.connection.query("FETCh?"))
-            return retval
-        elif "34401A":
-            retval = float(self.connection.query("FETCh?"))
-            return retval
         else:
             print(f"Device {self.instrument_ID} not in library")
             return retval
 
 
     @exception_handler    
-    def turn_off_auto_range(self):
+    def turn_off_auto_range(self) -> str:
         self.connection.write("VOLTage:DC:RANGe:AUTO OFF")
+        return self.get_auto_range_state()
 
     @exception_handler    
-    def get_auto_range_state(self):
+    def get_auto_range_state(self) -> str:
         return self.connection.query("VOLTage:DC:RANGe:AUTO?").strip("\n")
 
 
@@ -635,9 +630,6 @@ class Multimeter():
 
         Returns:
         The current selected function.
-
-        Raises:
-        Except: If the query fails.
         """
         return self.get_range("VOLTage:DC")
 
@@ -651,9 +643,6 @@ class Multimeter():
 
         Returns:
         The current selected function.
-
-        Raises:
-        Except: If the query fails.
         """
         retval = sys.maxsize 
         
