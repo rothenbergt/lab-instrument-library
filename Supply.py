@@ -398,6 +398,40 @@ class Supply():
         except:
             return False
     
+
+    @exception_handler    
+    def set_current(self, current: float) -> bool:
+        '''
+        Sets a voltage on the power supply
+        '''
+        try:
+            if "E3631A" in self.instrument_ID: 
+                self.connection.write(f"VOLT {voltage}")
+                self.connection.write(f"CURR {current}")
+            elif "E3632A" in self.instrument_ID:
+                self.connection.write(f"CURR {current}")
+            elif "E3649A" in self.instrument_ID:
+                
+                highest_current_available = float(self.connection.query(f"CURR? MAX"))
+                
+                if highest_current_available < current:
+                    print(f"The current we are trying to set {current} is higher than the limit {highest_current_available}.")
+                    return False
+                else:
+                    self.connection.write(f"CURR {current}")
+
+            elif "E36313A" in self.instrument_ID:
+                self.connection.write(f"CURR {current}")            
+            elif "E36234A" in self.instrument_ID:
+                self.connection.write(f"CURR {current}")  
+            else:
+                print(f"Device {self.instrument_ID} not in library")
+        
+            return True
+        except:
+            return False
+
+
     @exception_handler    
     def set_range(self, voltage) -> bool:
         '''
@@ -499,7 +533,7 @@ class Supply():
         self.connection.write("*RST")
         return True
         
-        
+
     @exception_handler    
     def clear(self):
         self.connection.write("*CLS")
@@ -525,3 +559,10 @@ class Supply():
     @exception_handler    
     def query_ascii_values(self, message) -> list:
         return self.connection.query_ascii_values(message)
+
+    def read(self):
+        return self.connection.read()
+        
+    def close(self):
+        self.connection.close()
+    

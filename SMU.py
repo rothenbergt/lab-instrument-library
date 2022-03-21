@@ -137,9 +137,11 @@ class SMU(LibraryTemplate):
         def inner_function(self, *args, **kw):
             try:
                 retval = sys.maxsize
-                # print(f"{func.__name__}")
+                print(f"{func.__name__}(", end = '')
+                print(*args, end = '')
+                print(')')
                 retval = func(self, *args, **kw)
-                # self.check_for_errors(show = True)
+                self.check_for_errors(show = True)
                 return retval
             except ValueError as ex:
                 print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
@@ -201,6 +203,7 @@ class SMU(LibraryTemplate):
     @exception_handler
     def set_mode(self, channel = 1, mode = "VOLT"):
         self.connection.write(f":SOUR{channel}:FUNC:MODE {mode}")
+        return self.get_function(channel)
 
     @exception_handler      
     def set_ch1_mode(self, mode = "VOLT"):
@@ -236,22 +239,22 @@ class SMU(LibraryTemplate):
         
 
     @exception_handler
-    def set_mode_voltage_limit(self, channel = 1, mode = "VOLT", voltage = 0, limit = 0):
-        self.set_mode(channel, mode)
+    def set_mode_voltage_limit(self, channel = 1, voltage = 0, limit = 0):
+        active_mode = self.set_mode(channel = channel, mode = "VOLT")
         self.set_voltage(channel, voltage)
         self.set_current_limit(channel, limit)
 
 
     @exception_handler
-    def set_mode_current_limit(self, channel = 1, mode = "CURR", current = 0, limit = 0):
-        self.set_mode(channel, mode)
+    def set_mode_current_limit(self, channel = 1, current = 0, limit = 0):
+        self.set_mode(channel, "CURR")
         self.set_current(channel, current)
         self.set_voltage_limit(channel, limit)
         
     
     @exception_handler
     def get_function(self, channel = 1):
-        return self.connection.query(":SOUR:FUNC:MODE?").strip("\n")
+        return self.connection.query(f":SOUR{channel}:FUNC:MODE?").strip("\n")
 
 
     @exception_handler
@@ -278,7 +281,13 @@ class SMU(LibraryTemplate):
 
     @exception_handler
     def set_current_limit(self, channel = 1, current = 0):
-        if self.get_function(channel) == "VOLT":
+
+        active_function = self.get_function(channel)
+
+        print(active_function)
+
+
+        if  active_function == "VOLT":
             self.connection.write(f":SENS{channel}:CURR:PROT {current}")       
         else:
             print("ERROR Cannot set current limit we are not on voltage mode")
@@ -336,7 +345,7 @@ class SMU(LibraryTemplate):
     @exception_handler
     def get_voltage_current_both_channels(self):
         measure_results = self.get_all_measurements_both_channels()
-        return measure_results[0], measure_results[1], measure_results[6], measure_results[7]
+        return (measure_results[0], measure_results[1], measure_results[6], measure_results[7])
 
 
     @exception_handler    
@@ -484,12 +493,16 @@ class SMU(LibraryTemplate):
         self.connection.write(f":SENS{channel}:CURR:RANG:AUTO OFF")
         self.connection.write(f":SENS{channel}:CURR:RANG {current}")
     
-    def set_voltage_source_range(self, voltage, channel = 1):
+    def set_voltage_source_range(self, voltage_range, channel = 1):
         self.connection.write(f":SOUR{channel}:VOLT:RANG:AUTO OFF")
-        self.connection.write(f":SOUR{channel}:VOLT:RANG {voltage}")
+        self.connection.write(f":SOUR{channel}:VOLT:RANG {voltage_range}")
 
     def turn_on_high_capacitance_mode(self, channel = 1):
         self.connection.write(f"OUTP{channel}:HCAP ON")
+
+    def set_ch2_high_capacitance(self):
+        self.turn_on_high_capacitance_mode(2)
+
     def turn_off_high_capacitance_mode(self, channel = 1):
         self.connection.write(f"OUTP{channel}:HCAP OFF")   
 
@@ -504,6 +517,20 @@ class SMU(LibraryTemplate):
 
     def set_output_off_status(self, channel = 1, function = "HIZ"):
         self.connection.write(f"OUTP{channel}:OFF:MODE {function}")   
+
+
+    def set_upper_range(self, channel, value):
+        active_function = self.get_function()
+
+        if active_function == "CURR":
+            self.connection.write(f":SENSe1:VOLTage:DC:RANGe:UPPer {value}")
+        elif active_function == "VOLT":
+            self.connection.write(f":SENSe1:CURRent:DC:RANGe:UPPer {value}")
+
+        
+    def set_ch1_upper_range(self, value):
+        self.set_upper_range(1, value)
+
 
 
     def turn_on_4_wire(self, channel = 1):
@@ -533,3 +560,68 @@ class SMU(LibraryTemplate):
     def set_trigger_period(self, period):
         self.connection.write(f":TRIG:TIM {period}")
 
+    def set_output_mode(self, channel = 1, mode = "FIXed"):
+        self.connection.write(f":SOURce{channel}:VOLTage:MODE {mode}")
+
+    def set_ch1_output_mode(self, mode):
+        self.set_output_mode(1, mode)
+
+    def set_ch2_output_mode(self, mode):
+        self.set_output_mode(2, mode)
+
+    def turn_off_auto_range(self, channel = 1):
+         self.connection.write(f":SOURce{channel}:VOLTage:RANGe:AUTO OFF")
+    
+    def set_ch1_auto_range_off(self):
+        self.turn_off_auto_range(1)
+
+    def set_ch2_auto_range_off(self):
+        self.turn_off_auto_range(1)
+
+    def set_integration_time(self, channel = 1, integration_time = 1):
+        active_function = self.get_function()
+        self.connection.write(f":SENSe{channel}:{active_function}:DC:APERture {integration_time}")
+
+    def set_ch1_integration_time(self, integration_time):
+        self.set_integration_time(1, integration_time)
+
+    def set_ch2_integration_time(self, integration_time):
+        self.set_integration_time(2, integration_time)   
+
+
+    def set_shape(self, channel, shape):
+        self.connection.write(f":SOURce{channel}:FUNCtion:SHAPe {shape}")
+
+    def set_ch1_shape(self, shape):
+        self.set_shape(1, shape)
+
+    def set_ch2_shape(self, shape):
+        self.set_shape(2, shape)
+
+    def set_pulse_delay(self, channel, delay):
+        self.connection.write(f":SOURce{channel}:PULSe:DELay {delay}")
+
+    def set_ch1_pulse_delay(self, delay):
+        self.set_pulse_delay(1, delay)
+
+    def set_ch2_pulse_delay(self, delay):
+        self.set_pulse_delay(2, delay)
+
+    def set_pulse_width(self, channel, width):
+        self.connection.write(f":SOURce{channel}:PULSe:WIDth {width}")
+
+    def set_ch1_pulse_width(self, width):
+        self.set_pulse_delay(1, width)
+
+    def set_ch2_pulse_width(self, width):
+        self.set_pulse_delay(2, width)
+
+    def set_trigger_source(self, function):
+        self.connection.write(f":TRIGger:ALL:SOURce:SIGNal {function}")
+
+    def read(self):
+        return self.connection.read()
+
+    def close(self):
+        self.connection.close()
+    

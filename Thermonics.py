@@ -42,7 +42,7 @@ class Thermonics:
     industrialTemperatureRange = [25, 0, -40, 105, 55]
 
 
-    def __init__(self, instrumentAddress = "GPIB0::21::INSTR"):
+    def __init__(self, instrumentAddress = "GPIB0::21::INSTR", selected_instrument = None):
         '''
         Constructs all the necessary attributes for the Thermonics object.
         '''
@@ -50,12 +50,18 @@ class Thermonics:
         self.instrument = instrumentAddress
         self.rm = pyvisa.ResourceManager()
         self.connection = None
-        self.instrument_name = None
+
+        if selected_instrument != None:
+            self.instrument_name = selected_instrument
+        else:
+            self.instrument_name = None
+
         self.instrumentID = None
-        self.make_connection(instrumentAddress)
+        self.make_connection(instrumentAddress, selected_instrument)
+        
 
     # TODO, add ability to choose temperature system from __init__
-    def make_connection(self, instrumentAddress : str) -> None:
+    def make_connection(self, instrumentAddress : str, selected_instrument = None) -> None:
         '''
         Attempts to establish a connection with a given instrument
         '''
@@ -63,6 +69,24 @@ class Thermonics:
         try:
             self.connection = self.rm.open_resource(instrumentAddress)
             self.connection.timeout = 2500                  
+
+            if self.instrument_name != None:
+                # Finish setup for specific instruments. Instrument names are used throughout
+                # the class instead of the dictionary key, value as it is easier to read.
+                if ("Oven" in self.instrument_name or "Thermonics" in self.instrument_name):
+                    # The Thermonics T-2420 only worked with the below settings. 
+                    # It is applied to the oven and T-2500 as well.
+                    self.connection.write_termination = '\r\n'
+                    self.connection.read_termination = '\r\n'
+                    self.connection.baud_rate = 9600
+                    print("Successfully established " + self.instrument + " connection")    
+                    return
+                else:
+                    # The only instrument which uses IEEE-488.2 is the X-Stream 4300.
+                    # IEEE-488.2 allows the use of the newer commands such as *IDN?
+                    self.instrumentID = self.connection.query("*IDN?")[:-1]           
+                    print("Successfully established " + self.instrument + " connection with", self.instrumentID)
+                    return
 
             # Determine which instrument we are attempting to connect to. This method is used instead of
             # first identifying the instrument, then using its name to pick an instruction set
@@ -78,6 +102,7 @@ class Thermonics:
                                     
                 if user_choice in self.instrumentDictionary:
                     self.instrument_name = str(self.instrumentDictionary[user_choice])
+                    print(f"{self.instrument_name}")
                     break
                 else:
                     print("Not a valid choice! Try again...")
@@ -263,3 +288,5 @@ class Thermonics:
         '''    
         return self.connection.query(message)
     
+    def close(self):
+        self.connection.close()
