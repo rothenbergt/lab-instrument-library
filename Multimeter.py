@@ -761,3 +761,6 @@ class Multimeter():
     @exception_handler    
     def query_ascii_values(self, message) -> list:
         return self.connection.query_ascii_values(message)
+
+    def close(self):
+        self.connection.close()

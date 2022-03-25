@@ -137,11 +137,11 @@ class SMU(LibraryTemplate):
         def inner_function(self, *args, **kw):
             try:
                 retval = sys.maxsize
-                print(f"{func.__name__}(", end = '')
-                print(*args, end = '')
-                print(')')
+                # print(f"{func.__name__}(", end = '')
+                # print(*args, end = '')
+                # print(')')
                 retval = func(self, *args, **kw)
-                self.check_for_errors(show = True)
+                # self.check_for_errors(show = True)
                 return retval
             except ValueError as ex:
                 print(f"Could not convert returned value to float from meter: {self.instrument_ID} at {self.instrument} \n \
@@ -488,17 +488,26 @@ class SMU(LibraryTemplate):
         except Exception as ex:
             print("Unkown error caused the picture saving to fail...")
        
-    def set_current_sens_range(self, current, channel = 1):
+    def set_current_sense_range(self, current, channel = 1):
         # If we are setting a current range, then we dont want an auto range
         self.connection.write(f":SENS{channel}:CURR:RANG:AUTO OFF")
         self.connection.write(f":SENS{channel}:CURR:RANG {current}")
-    
+
+    def set_ch1_current_sense_range(self, current):
+        self.set_current_sense_range(current, 1)
+
+    def set_ch2_current_sense_range(self, current):
+        self.set_current_sense_range(current, 2)
+
     def set_voltage_source_range(self, voltage_range, channel = 1):
         self.connection.write(f":SOUR{channel}:VOLT:RANG:AUTO OFF")
         self.connection.write(f":SOUR{channel}:VOLT:RANG {voltage_range}")
 
     def turn_on_high_capacitance_mode(self, channel = 1):
         self.connection.write(f"OUTP{channel}:HCAP ON")
+
+    def set_ch1_high_capacitance(self):
+        self.turn_on_high_capacitance_mode(1)
 
     def set_ch2_high_capacitance(self):
         self.turn_on_high_capacitance_mode(2)
@@ -535,10 +544,16 @@ class SMU(LibraryTemplate):
 
     def turn_on_4_wire(self, channel = 1):
         self.connection.write(f":SENS{channel}:REM ON")  
+
     def set_NPLC(self, NPLC, channel = 1):
         self.connection.write(f":SENS{channel}:CURR:NPLC {NPLC}")
         
-        
+    def set_ch1_NPLC(self, NPLC):
+        self.set_NPLC(NPLC, 1)
+
+    def set_ch2_NPLC(self, NPLC):
+        self.set_NPLC(NPLC, 2)
+
     def trigger(self):
         self.connection.write(":TRIG:ACQ (@1,2)")
 

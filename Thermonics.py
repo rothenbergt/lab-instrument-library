@@ -263,6 +263,7 @@ class Thermonics:
             
         return float(retval)          
 
+
     def turn_off_air(self):
         '''
         Turn the forced air off
@@ -282,11 +283,16 @@ class Thermonics:
         '''    
         self.connection.write(message)
 
-    def query(self, message):
+
+    def query(self, message) -> str:
         '''
         General query method for unwritten functionality
         '''    
         return self.connection.query(message)
     
+
     def close(self):
+        '''
+        Close the connection with the instrument
+        '''    
         self.connection.close()

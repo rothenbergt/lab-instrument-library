@@ -228,10 +228,12 @@ class Supply():
 
         return int(retval)
 
+    @exception_handler
+    def enable(self) -> bool:
+        return self.enable_output
 
     @exception_handler
     def enable_output(self) -> bool:
-        #TODO union the return function
         """Enables the output of the power supply
 
         Args:
@@ -545,7 +547,6 @@ class Supply():
         query
         query_ascii_values
     """
-
     @exception_handler    
     def write(self, message : str) -> str:
         self.connection.write(message)
@@ -560,9 +561,15 @@ class Supply():
     def query_ascii_values(self, message) -> list:
         return self.connection.query_ascii_values(message)
 
-    def read(self):
+
+    @exception_handler
+    def read(self) -> str:
         return self.connection.read()
         
+
+    @exception_handler
     def close(self):
+        '''
+        Close the connection with the instrument
+        '''    
         self.connection.close()
-    

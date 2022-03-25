@@ -1,65 +1,68 @@
+# Import time to allow for delays
+import time
+
+# from Supply.py import the Supply class
 from Supply import Supply
+
+# from Multimeter.py import the Multimeter clas
 from Multimeter import Multimeter
-import sys
-voltage_to_set = 9.05
 
+# Imported numpy for use of arange
+import numpy as np
 
-# supply = Supply('GPIB0::4::INSTR')
+# Imported pandas for use of DataFrame
+import pandas as pd
 
-# supply.select_output1()
-# supply.set_voltage(voltage_to_set)
-# supply.enable_output()
+# Instantiate the objects with a given GPIB address
+supply = Supply("GPIB0::5::INSTR")
+multimeter = Multimeter("GPIB0::3::INSTR")
 
-mult = Multimeter("USB0::0x05E6::0x2110::8015791::INSTR")
-mult = Multimeter("GPIB0::5::INSTR")
+# The maximum supply voltage for Richtek is 36V, for TI/Renesas 40V
+maximum_supply_voltage = 36
 
+# The minimum supply voltage for 5V is 6V, etc
+minimum_supply_voltage = 6
 
-print(mult.read_function(function = 'VOLTage:DC'))
-mult.turn_off_auto_range()
-voltage_range = mult.set_voltage_range(4)
+# Step size between each voltage is given at 0.250V
+step_size = 0.5
 
-while True:
-    print(mult.get_auto_range_state())
-    res = mult.read_voltage_AC()
-    print(res)
+# Create a supply voltage list using the given variables
+supply_voltage_list = np.arange(minimum_supply_voltage, (maximum_supply_voltage + step_size), step_size)
+
+# Create an empty DataFrame which will hold all data
+df = pd.DataFrame()
+
+# For each supply voltage in the list
+for supply_voltage in supply_voltage_list:
+
+    # Set the supply
+    supply.set_voltage(supply_voltage)
+    supply.enable_output()
+
+    # Wait a bit
+    time.sleep(0.2)
     
+    # Record from multimeter
+    output_voltage = multimeter.measure_voltage()
+
+    # Build the row of data
+    temp_row = {'Output Voltage (V)': output_voltage,
+                'Supply Voltage (V)': supply_voltage}   
+
+    # Append it
+    df = df.append(temp_row, ignore_index=True)
+    
+    # Print it
+    print(df)
+
+    # Save it
+    df.to_csv("G:\Analog Solutions PL\Applications Loading\Tyler Rothenberg\donTest\don_test.csv")
+
+# Turn Off Supply
+supply.disable_output()
+
+# Close Instruments
+supply.close()
+multimeter.close()
 
 
-# print(f"The range is {voltage_range}")
-
-# # print(mult.measure_voltage_AC())
-
-# voltage = mult.read_voltage()
-
-# new_voltage = voltage_to_set
-
-# while (round(voltage, 2) != 9):
-#     new_voltage = new_voltage - 0.001
-#     supply.set_voltage(new_voltage)
-#     voltage = mult.read_voltage()
-
-#     print(f"The voltage is now {round(voltage, 2)}")
-
-
-# print(mult.read_voltage())
-# print(mult.read_current())
-# print(mult.read_current_AC())
-# print(mult.read_resistance())
-
-# mult.set_function("VOLTage:DC")
-
-# mult.initiate()
-
-# mult.set_function("VOLTage:AC")
-# mult.initiate()
-
-# print(mult.fetch_voltage())
-# print(mult.fetch_voltage_AC())
-
-# print(mult.fetch_current())
-# print(mult.fetch_current_AC())
-
-# print(mult.fetch_resistance())
-print(mult.get_error())
-
-# print(sys.maxsize)
