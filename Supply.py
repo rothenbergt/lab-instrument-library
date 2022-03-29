@@ -210,23 +210,7 @@ class Supply():
         Returns:
         the output state
         """
-        
-        retval = sys.maxsize
-
-        if "E3631A" in self.instrument_ID:
-            retval = self.connection.query("OUTPut?")
-        elif "E3632A" in self.instrument_ID:
-            retval = self.connection.query("OUTPut?")
-        elif "E3649A" in self.instrument_ID:
-            retval = self.connection.query("OUTPut?")
-        elif "E36313A" in self.instrument_ID:
-            retval = self.connection.query("OUTPut?")
-        elif "E36234A" in self.instrument_ID:
-            retval = self.connection.query("OUTPut?")
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-
-        return int(retval)
+        return self.connection.query("OUTPut?")
 
     @exception_handler
     def enable(self) -> bool:
