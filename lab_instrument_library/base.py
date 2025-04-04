@@ -9,8 +9,11 @@ identification, and basic VISA commands.
 import pyvisa
 import logging
 import time
-from typing import Optional, Union, List, Any, Tuple
+from typing import Optional, Union, List, Any, Tuple, Generator
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
+
+from .utils.decorators import visa_exception_handler
 
 # Setup module logger
 logger = logging.getLogger(__name__)
@@ -56,8 +59,10 @@ class LibraryTemplate(ABC):
             logger.error(f"Failed to establish connection with {instrument_address}")
             raise SystemExit(f"Could not connect to instrument at {instrument_address}")
   
-    def make_connection(self, instrument_address: str, identify: bool) -> bool:
+    def make_connection(self, instrument_address: str, identify: bool = True) -> bool:
         """Establish a connection to the instrument.
+        
+        Simplified connection logic with clearer error messages and better logging.
         
         Args:
             instrument_address: VISA address of the instrument.
@@ -67,53 +72,81 @@ class LibraryTemplate(ABC):
             bool: True if connection succeeded, False otherwise.
         """
         try:
-            # Make the connection and store it
+            # Make the connection
             self.connection = self.rm.open_resource(instrument_address)
-            
-            # Set timeout for slower instruments
             self.connection.timeout = self.timeout
             
-            # Configure termination characters if needed
-            # self.connection.read_termination = '\n'
-            # self.connection.write_termination = '\n'
-            
-            # Display that the connection has been made
-            if identify:              
-                self.identify()
-                if self.instrumentID:
-                    logger.info(f"Successfully established {self.instrument_address} connection with {self.instrumentID}")
-                    print(f"Successfully established {self.instrument_address} connection with {self.instrumentID}")
-                    return True
-                else:
-                    logger.warning(f"Connected to {self.instrument_address} but couldn't identify instrument")
-                    return False
-            else:
-                display_name = self.nickname if self.nickname else instrument_address
-                logger.info(f"Successfully established {self.instrument_address} connection with {display_name}")
-                print(f"Successfully established {self.instrument_address} connection with {display_name}")
-                return True
-        
+            # Handle identification if requested
+            if identify and not self._identify_instrument():
+                return False
+                
+            # Connection successful
+            display_name = self.instrumentID if identify and self.instrumentID else \
+                          (self.nickname if self.nickname else instrument_address)
+            logger.info(f"Connected to {instrument_address}: {display_name}")
+            print(f"Successfully connected to {display_name} at {instrument_address}")
+            return True
+                
         except pyvisa.errors.VisaIOError as e:
-            logger.error(f"VISA IO Error connecting to {self.instrument_address}: {str(e)}")
-            print(f"VISA IO Error: {str(e)}")
-            print(f"Failed to establish {self.instrument_address} connection.")
+            error_message = self._get_visa_error_message(e, instrument_address)
+            logger.error(error_message)
+            print(error_message)
             return False
         except Exception as e:
-            logger.error(f"Failed to establish {self.instrument_address} connection: {str(e)}")
-            print(f"Failed to establish {self.instrument_address} connection.")
+            logger.error(f"Failed to connect to {instrument_address}: {str(e)}")
+            print(f"Connection error: {str(e)}")
             return False
+    
+    def _identify_instrument(self) -> bool:
+        """Helper method to identify the instrument.
+        
+        Returns:
+            bool: True if identification succeeded, False otherwise.
+        """
+        try:
+            self.identify()
+            if not self.instrumentID:
+                logger.warning(f"Connected to {self.instrument_address} but couldn't identify instrument")
+                print(f"Warning: Connected to {self.instrument_address} but couldn't identify instrument")
+                return False
+            return True
+        except Exception as e:
+            logger.warning(f"Connected to {self.instrument_address} but identification failed: {str(e)}")
+            print(f"Warning: Identification failed: {str(e)}")
+            return False
+    
+    def _get_visa_error_message(self, error: pyvisa.errors.VisaIOError, address: str) -> str:
+        """Generate a helpful error message for VISA errors.
+        
+        Args:
+            error: The VISA error that occurred
+            address: The instrument address
             
+        Returns:
+            str: A user-friendly error message
+        """
+        messages = {
+            "VI_ERROR_NLISTENERS": f"No listeners at {address}. Check the GPIB address and ensure device is powered on.",
+            "VI_ERROR_TMO": f"Connection timeout at {address}. Device not responding.",
+            "VI_ERROR_RSRC_NFOUND": f"Resource not found at {address}. Check connections and VISA configuration.",
+            "VI_ERROR_CONN_LOST": f"Connection lost to {address}. Check physical connections."
+        }
+        
+        for key, message in messages.items():
+            if key in str(error):
+                return f"{message} ({error})"
+                
+        return f"VISA error connecting to {address}: {error}"
+            
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
     def close_connection(self) -> None:
         """Close the connection to the instrument.
         
         This method should be called when finished with the instrument to release resources.
         """
         if self.connection:
-            try:
-                self.connection.close()
-                logger.info(f"Connection to {self.instrument_address} closed")
-            except Exception as e:
-                logger.warning(f"Error closing connection to {self.instrument_address}: {str(e)}")
+            self.connection.close()
+            logger.info(f"Connection to {self.instrument_address} closed")
     
     # Alias for backward compatibility
     close = close_connection
@@ -139,6 +172,7 @@ class LibraryTemplate(ABC):
         """
         self.close_connection()
 
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
     def identify(self) -> Optional[str]:
         """Query the instrument's identification string.
         
@@ -147,31 +181,24 @@ class LibraryTemplate(ABC):
         Returns:
             str: The instrument identification string, or None if identification failed.
         """
-        try:
-            response = self.connection.query("*IDN?").strip()
-            self.instrumentID = response
-            return self.instrumentID
-        except Exception as e:
-            logger.warning(f"Instrument at {self.instrument_address} could not be identified: {str(e)}")
-            print("Unit could not be identified using *IDN? command")
-            return None
+        response = self.connection.query("*IDN?").strip()
+        self.instrumentID = response
+        return self.instrumentID
              
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
     def write(self, command: str) -> None:
         """Send a command string to the instrument.
         
         Args:
             command: The command string to send.
             
-        Raises:
-            pyvisa.errors.VisaIOError: If the write operation fails.
+        Returns:
+            None: Returns None if successful, None if operation fails.
         """
-        try:
-            self.connection.write(command)
-            logger.debug(f"Wrote to {self.instrument_address}: {command}")
-        except Exception as e:
-            logger.error(f"Error writing '{command}' to {self.instrument_address}: {str(e)}")
-            raise
+        self.connection.write(command)
+        logger.debug(f"Wrote to {self.instrument_address}: {command}")
     
+    @visa_exception_handler(default_return_value="", module_logger=logger)
     def query(self, command: str, delay: Optional[float] = None) -> str:
         """Send a query to the instrument and return the response.
         
@@ -180,25 +207,19 @@ class LibraryTemplate(ABC):
             delay: Optional delay in seconds between write and read operations.
             
         Returns:
-            str: The response from the instrument.
-            
-        Raises:
-            pyvisa.errors.VisaIOError: If the query operation fails.
+            str: The response from the instrument or empty string on failure.
         """
-        try:
-            if delay:
-                self.connection.write(command)
-                time.sleep(delay)
-                response = self.connection.read()
-            else:
-                response = self.connection.query(command)
-            
-            logger.debug(f"Queried {self.instrument_address} with '{command}', got '{response}'")
-            return response.strip()
-        except Exception as e:
-            logger.error(f"Error querying {self.instrument_address} with '{command}': {str(e)}")
-            raise
+        if delay:
+            self.connection.write(command)
+            time.sleep(delay)
+            response = self.connection.read()
+        else:
+            response = self.connection.query(command)
+        
+        logger.debug(f"Queried {self.instrument_address} with '{command}', got '{response}'")
+        return response.strip()
     
+    @visa_exception_handler(default_return_value=[], module_logger=logger)
     def query_binary_values(self, command: str, datatype: str = 'f', 
                           is_big_endian: bool = True, 
                           container: Any = list) -> List[Any]:
@@ -211,16 +232,13 @@ class LibraryTemplate(ABC):
             container: The container type for the returned values.
             
         Returns:
-            A list (or specified container) of the retrieved values.
+            A list (or specified container) of the retrieved values, or empty list on failure.
         """
-        try:
-            values = self.connection.query_binary_values(
-                command, datatype, is_big_endian, container)
-            return values
-        except Exception as e:
-            logger.error(f"Error querying binary values from {self.instrument_address}: {str(e)}")
-            raise
+        values = self.connection.query_binary_values(
+            command, datatype, is_big_endian, container)
+        return values
     
+    @visa_exception_handler(default_return_value=[], module_logger=logger)
     def query_ascii_values(self, command: str, separator: str = ',', 
                          container: Any = list) -> List[Any]:
         """Query the instrument for ASCII values.
@@ -231,16 +249,13 @@ class LibraryTemplate(ABC):
             container: The container type for the returned values.
             
         Returns:
-            A list (or specified container) of the retrieved values.
+            A list (or specified container) of the retrieved values, or empty list on failure.
         """
-        try:
-            values = self.connection.query_ascii_values(
-                command, separator, container)
-            return values
-        except Exception as e:
-            logger.error(f"Error querying ASCII values from {self.instrument_address}: {str(e)}")
-            raise
+        values = self.connection.query_ascii_values(
+            command, separator, container)
+        return values
     
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
     def reset(self) -> bool:
         """Send reset command (*RST) to the instrument.
         
@@ -249,17 +264,13 @@ class LibraryTemplate(ABC):
         Returns:
             bool: True if reset succeeded, False otherwise.
         """
-        try:
-            self.connection.write("*RST")
-            # Some instruments need time after reset
-            time.sleep(0.5)
-            logger.info(f"Reset {self.instrument_address}")
-            return True
-        except Exception as e:
-            logger.warning(f"Could not reset {self.instrument_address}: {str(e)}")
-            print("Unit could not be reset using *RST command")
-            return False
+        self.write("*RST")
+        # Some instruments need time after reset
+        time.sleep(0.5)
+        logger.info(f"Reset {self.instrument_address}")
+        return True
 
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
     def clear(self) -> bool:
         """Send clear command (*CLS) to the instrument.
         
@@ -268,15 +279,11 @@ class LibraryTemplate(ABC):
         Returns:
             bool: True if clear succeeded, False otherwise.
         """
-        try:
-            self.connection.write("*CLS")
-            logger.info(f"Cleared {self.instrument_address}")
-            return True
-        except Exception as e:
-            logger.warning(f"Could not clear {self.instrument_address}: {str(e)}")
-            print("Unit could not be cleared using *CLS command")
-            return False
+        self.connection.write("*CLS")
+        logger.info(f"Cleared {self.instrument_address}")
+        return True
             
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
     def wait_for_operation_complete(self, timeout: float = 10.0) -> bool:
         """Wait for pending operations to complete.
         
@@ -288,22 +295,115 @@ class LibraryTemplate(ABC):
         Returns:
             bool: True if completed within timeout, False otherwise.
         """
-        try:
-            start_time = time.time()
-            response = self.connection.query("*OPC?", delay=timeout)
-            elapsed = time.time() - start_time
-            logger.debug(f"Operation completed in {elapsed:.2f} seconds")
-            return bool(int(response.strip()))
-        except Exception as e:
-            logger.warning(f"Error waiting for operation complete: {str(e)}")
-            return False
+        start_time = time.time()
+        response = self.connection.query("*OPC?", delay=timeout)
+        elapsed = time.time() - start_time
+        logger.debug(f"Operation completed in {elapsed:.2f} seconds")
+        return bool(int(response.strip()))
     
-    # Abstract methods that should be implemented by all instrument classes
-    @abstractmethod
+    @visa_exception_handler(default_return_value="Error: Unable to retrieve error status", module_logger=logger)
     def get_error(self) -> str:
         """Get the first error from the instrument's error queue.
+        
+        Most instruments use the SYST:ERR? command to retrieve errors
+        from the error queue. Subclasses can override this method if
+        their instruments use a different command.
         
         Returns:
             str: Error message or indication of no error.
         """
-        pass
+        response = self.query("SYST:ERR?")
+        logger.debug(f"Error query response: {response}")
+        return response
+    
+    @visa_exception_handler(default_return_value="", module_logger=logger)
+    def safe_query(self, command: str, default: str = "") -> str:
+        """Send a query to the instrument with exception handling.
+        
+        Args:
+            command: Command string to send
+            default: Default value to return if query fails
+            
+        Returns:
+            Response from instrument or default value if operation fails
+        """
+        try:
+            return self.query(command)
+        except Exception:
+            return default
+
+    def is_connected(self) -> bool:
+        """Check if the instrument is currently connected.
+        
+        Returns:
+            bool: True if there's an active connection, False otherwise.
+        """
+        return self.connection is not None and hasattr(self.connection, 'session')
+        
+    @contextmanager
+    def temporary_timeout(self, timeout_ms: int) -> None:
+        """Temporarily change the connection timeout.
+        
+        Args:
+            timeout_ms: Timeout value in milliseconds
+            
+        Yields:
+            None
+        
+        Example:
+            with instrument.temporary_timeout(10000):
+                # Operation that needs longer timeout
+                result = instrument.query("LONG_OPERATION?")
+        """
+        original_timeout = self.connection.timeout
+        try:
+            self.connection.timeout = timeout_ms
+            yield
+        finally:
+            self.connection.timeout = original_timeout
+            
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
+    def check_error_status(self) -> Union[bool, str]:
+        """Check if the instrument has any errors.
+        
+        Returns:
+            Union[bool, str]: False if no error, error message string if error was found.
+        """
+        error = self.get_error()
+        if not error or "+0," in error or "No error" in error:
+            return False
+        return error
+            
+    def set_remote_mode(self) -> bool:
+        """Set the instrument to remote operation mode.
+        
+        This is a generic implementation; specific instruments may need to override this.
+        
+        Returns:
+            bool: True if successfully set to remote mode, False otherwise.
+        """
+        try:
+            # Generic implementation that works with many instruments
+            self.write("SYST:REM")
+            logger.info(f"Set {self.instrument_address} to remote mode")
+            return True
+        except Exception as e:
+            logger.warning(f"Could not set {self.instrument_address} to remote mode: {str(e)}")
+            return False
+            
+    def set_local_mode(self) -> bool:
+        """Set the instrument to local operation mode.
+        
+        This is a generic implementation; specific instruments may need to override this.
+        
+        Returns:
+            bool: True if successfully set to local mode, False otherwise.
+        """
+        try:
+            # Generic implementation that works with many instruments
+            self.write("SYST:LOC")
+            logger.info(f"Set {self.instrument_address} to local mode")
+            return True
+        except Exception as e:
+            logger.warning(f"Could not set {self.instrument_address} to local mode: {str(e)}")
+            return False

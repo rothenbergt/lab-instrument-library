@@ -51,12 +51,7 @@ class TemperatureSensorBase(ABC):
         pass
     
     def set_units(self, unit: str) -> None:
-        """Set the temperature units.
-        
-        Args:
-            unit: Units to use ('C', 'F', or 'K')
-        """
-        # Default implementation - override in subclasses if needed
+        """Set the temperature units."""
         try:
             if unit.upper() in ['C', 'CEL', 'CELSIUS']:
                 self.connection.write("UNIT:TEMP C")
@@ -281,14 +276,7 @@ class TemperatureSensor(LibraryTemplate):
         self.sensor.set_units(unit)
 
     def reset(self) -> bool:
-        """Reset the instrument to default settings.
-        
-        This method first calls the base class reset implementation and
-        then performs any temperature sensor specific reset operations.
-        
-        Returns:
-            bool: True if reset succeeded, False otherwise.
-        """
+        """Reset the instrument to default settings."""
         success = super().reset()
         # Allow sensor-specific reset if supported
         if hasattr(self.sensor, 'reset'):
@@ -297,11 +285,7 @@ class TemperatureSensor(LibraryTemplate):
         return success
 
     def close(self) -> None:
-        """Close the connection to the instrument.
-        
-        This method ensures both the sensor-specific cleanup and 
-        the base PyVISA connection closure are performed.
-        """
+        """Close the connection to the instrument."""
         # First do any sensor-specific cleanup
         if hasattr(self.sensor, 'close'):
             try:

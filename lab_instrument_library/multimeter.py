@@ -22,709 +22,212 @@ import sys
 import pyvisa
 import logging
 import time
-from typing import Optional, Union, Callable, Any, Dict, List
+import numpy as np
+from typing import Optional, Union, Callable, Any, Dict, List, Tuple
+from abc import ABC, abstractmethod
 from .base import LibraryTemplate
-from .utils import visa_exception_handler
+from .utils.decorators import visa_exception_handler, parameter_validator, retry
 
 # Setup module logger
 logger = logging.getLogger(__name__)
 
-class Multimeter(LibraryTemplate):
-    """General multimeter interface for lab instruments.
+# Valid measurement functions for all multimeters
+VALID_FUNCTIONS = [
+    "VOLT", "VOLT:DC", "VOLT:AC", 
+    "CURR", "CURR:DC", "CURR:AC",
+    "RES", "FRES", "FREQ", "CONT", "DIOD", "TEMP"
+]
 
-    This class provides a unified interface to control various multimeter models
-    through standard commands. It handles connection establishment, command sending,
-    and measurement acquisition regardless of manufacturer differences.
-
+class MultimeterBase(LibraryTemplate, ABC):
+    """Base class for all multimeters.
+    
+    This abstract base class provides common functionality for different multimeter models.
+    It implements methods for basic measurement operations that are shared across
+    various laboratory multimeter instruments.
+    
     Attributes:
-        lab_multimeters: Dictionary mapping of supported multimeter models.
-        instrument_address: VISA address of the connected instrument.
-        connection: PyVISA resource connection object.
-        instrument_ID: Identification string of the connected instrument.
-        nickname: User-provided name for the instrument (optional).
+        instrument_address: The VISA address of the connected multimeter.
+        connection: The PyVISA resource connection object.
+        instrumentID: The identification string of the connected instrument.
+        nickname: A user-provided name for the instrument (optional).
     """
-    lab_multimeters = {
-        "1": "2000",
-        "2": "2110",
-        "3": "4050",
-        "4": "34401A",
-    }
     
-    # Map of model strings to identify manufacturers
-    _manufacturers = {
-        "33": "Agilent",
-        "34": "HP/Agilent",
-        "20": "Keithley",
-        "21": "Keithley",
-        "40": "Tektronix",
-        "DMM": "Tektronix"
-    }
-    
-    def __init__(self, instrument_address: str, nickname: Optional[str] = None, 
-                 identify: bool = True, timeout: int = 5000):
-        """Initialize the multimeter connection.
+    def __init__(self, instrument_address: str, nickname: Optional[str] = None,
+                identify: bool = True, timeout: int = 5000):
+        """Initialize a connection to the multimeter.
 
         Args:
             instrument_address: VISA address of the instrument.
             nickname: User-defined name for the instrument.
             identify: Whether to identify the instrument with *IDN?.
-                      Set to False for instruments that don't support *IDN?.
             timeout: Connection timeout in milliseconds.
-
-        Raises:
-            SystemExit: If connection fails and no exception handler is in place.
-        """      
-        self.instrument_address = instrument_address
-        self.rm = pyvisa.ResourceManager()
-        self.connection = None
-        self.instrument_ID = None
-        self.nickname = nickname
-        self.manufacturer = None
-        self.model = None
-
-        if not self.make_connection(identify):
-            logger.error(f"Failed to connect to multimeter at {instrument_address}")
-            sys.exit(1)
-
-        # Configure instrument-specific settings
-        self.connection.timeout = timeout
-        
-        # Detect manufacturer and model
-        if self.instrument_ID:
-            self._identify_manufacturer()
-
-    def _identify_manufacturer(self) -> None:
-        """Determine the manufacturer and model from the ID string."""
-        if not self.instrument_ID:
-            return
-            
-        # Extract model information
-        parts = self.instrument_ID.split(',')
-        if len(parts) >= 2:
-            self.manufacturer = parts[0].strip()
-            self.model = parts[1].strip()
-            
-        # For nickname behavior, also identify by model number
-        for key, manufacturer in self._manufacturers.items():
-            if self.model and key in self.model:
-                self.manufacturer = manufacturer
-                break
-
-    def make_connection(self, identify: bool) -> bool:
-        """Establish a connection to the multimeter.
+        """
+        super().__init__(instrument_address, nickname, identify, timeout)
+        logger.info(f"Initialized {self.__class__.__name__} at {instrument_address}")
+    
+    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_function(self, function: str) -> str:
+        """Set the measurement function.
 
         Args:
-            identify: Whether to query the instrument ID.
-
-        Returns:
-            bool: True if connection was successful, False otherwise.
-        """
-        try:
-            # Establish the connection
-            self.connection = self.rm.open_resource(self.instrument_address)
+            function: The measurement function to set (e.g., "VOLT", "CURR", "RES").
+                    Common functions: "VOLT" (DC voltage), "VOLT:AC" (AC voltage),
+                    "CURR" (DC current), "CURR:AC" (AC current), "RES" (resistance).
             
-            # Identify the instrument if requested
-            if identify:              
-                if self.identify():
-                    logger.info(f"Connected to {self.instrument_ID} at {self.instrument_address}")
-                    print(f"Successfully established {self.instrument_address} connection with {self.instrument_ID}")
-                    return True
-                else:
-                    return False
-            else:
-                if self.nickname is None:
-                    logger.error("Nickname must be set when identify=False")
-                    print("If identify is false nickname must be set")
-                    return False
-                
-                self.instrument_ID = self.nickname
-                logger.info(f"Connected to {self.instrument_ID} at {self.instrument_address}")
-                print(f"Successfully established {self.instrument_address} connection with {self.instrument_ID}")
-                return True
+        Returns:
+            str: The current selected function.
         
-        except pyvisa.errors.VisaIOError as ex:
-            logger.error(f"VISA error connecting to {self.instrument_address}: {str(ex)}")
-            print(f"VISA error connecting to {self.instrument_address}")
-            print(ex)
-            return False
-        except Exception as ex:
-            logger.error(f"Error connecting to {self.instrument_address}: {str(ex)}")
-            print(f"General exception connecting to {self.instrument_address}")
-            print(ex)
-            return False
-            
-    def identify(self) -> bool:
-        """Identify the instrument using the *IDN? query.
+        Raises:
+            ValueError: If function is not supported.
+        """
+        self.write(f":CONF:{function}")
+        return self.get_function()
+    
+    @visa_exception_handler(default_return_value="VOLT", module_logger=logger)
+    def get_function(self) -> str:
+        """Get the currently selected measurement function.
 
         Returns:
-            bool: True if identification was successful, False otherwise.
+            str: The current selected function.
         """
-        try:
-            self.instrument_ID = self.connection.query("*IDN?").strip()
-            return True
-        except Exception as ex:
-            logger.error(f"Identification failed: {str(ex)}")
-            print(f"{self.__class__.__name__} at {self.instrument_address} could not be identified using *IDN?")
-            return False
+        current_function = self.query("FUNC?")
+        return current_function.strip("\n").strip("\"")
 
+    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def measure(self, function: str) -> float:
+        """Perform a measurement using the specified function.
+        
+        This method configures the multimeter for the specified measurement function,
+        triggers a measurement and returns the result.
+        
+        Args:
+            function: The measurement function (e.g., "VOLT", "CURR", "RES").
+            
+        Returns:
+            float: The measured value or 0.0 if an error occurred.
+        """
+        # If the function is already set, we don't need to set it again
+        current_function = self.get_function()
+        if current_function.upper() != function.upper():
+            self.set_function(function)
+        
+        # Use MEASure command for a complete measurement
+        response = self.query(f"MEAS:{function}?")
+        return float(response.strip())
+        
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read(self, function: Optional[str] = None) -> float:
+        """Perform measurement and acquire reading.
+        
+        Unlike measure(), this method reuses the current configuration
+        and just triggers a new reading.
+        
+        Args:
+            function: Optional function to set before reading.
+            
+        Returns:
+            float: The measured value or 0.0 if an error occurred.
+        """
+        # Set function if specified
+        if function:
+            current_function = self.get_function()
+            if current_function.upper() != function.upper():
+                self.set_function(function)
+        
+        # Get a reading
+        response = self.query("READ?")
+        return float(response.strip())
+        
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch(self, function: Optional[str] = None) -> float:
+        """Fetch the latest reading without triggering a new measurement.
+        
+        Args:
+            function: Optional function to set before fetching.
+            
+        Returns:
+            float: The measured value or 0.0 if an error occurred.
+        """
+        # Set function if specified
+        if function:
+            current_function = self.get_function()
+            if current_function.upper() != function.upper():
+                self.set_function(function)
+        
+        # Initiate a measurement
+        self.initiate()
+        
+        # Fetch the result
+        response = self.query("FETC?")
+        return float(response.strip())
+    
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
     def initiate(self) -> bool:
         """Initiate a measurement (change to waiting-for-trigger state).
         
-        This method prepares the multimeter to take a reading when triggered.
-
         Returns:
             bool: True if the command was sent successfully.
         """
-        try:
-            self.connection.write("INIT")
-            return True
-        except Exception as ex:
-            logger.error(f"Error initiating measurement: {str(ex)}")
-            return False
+        self.write("INIT")
+        return True
     
-    @visa_exception_handler(default_return_value=sys.maxsize, module_logger=logger)
-    def fetch(self, function: str = "VOLT") -> float:
-        """Fetch the most recent measurement from the multimeter's buffer.
-
-        This method retrieves a reading from the instrument's memory without
-        initiating a new measurement. The instrument must have already taken
-        a measurement or be in a continuous measurement mode.
-
-        Args:
-            function: The measurement function to use (e.g., "VOLT", "CURR").
-
-        Returns:
-            float: The measured value or sys.maxsize if an error occurred.
-        """
-        # Ensure the correct function is set
-        current_function = self.get_function()
-        if current_function != function:
-            self.set_function(function)
-            logger.debug(f"Changed function from {current_function} to {function}")
-
-        self.initiate()
-        response = self.connection.query("FETCh?")
-        return float(response.strip())
-
-    @visa_exception_handler(module_logger=logger)
-    def fetch_voltage(self) -> float:
-        """Fetch DC voltage reading
-
-        Args:
-        none
-
-        Returns:
-        The most recent DC voltage measurement
-        """
-        return self.fetch("VOLT")
-
-
-    @visa_exception_handler(module_logger=logger)
-    def fetch_voltage_AC(self) -> float:
-        """Fetch AC voltage reading
-
-        Args:
-        none
-
-        Returns:
-        The most recent AC voltage measurement
-        """
-        return self.fetch("VOLT:AC")
-
-
-    @visa_exception_handler(module_logger=logger)
-    def fetch_current_AC(self) -> float:
-        """Fetch AC current reading
-
-        Args:
-        none
-
-        Returns:
-        The most recent AC current measurement
-        """
-        return self.fetch("CURR:AC")
-
-
-    @visa_exception_handler(module_logger=logger)
-    def fetch_current(self) -> float:
-        """Fetch DC current reading
-
-        Args:
-        none
-
-        Returns:
-        The most recent DC current measurement
-        """
-        return self.fetch("CURR")
-
-
-    @visa_exception_handler(module_logger=logger)
-    def fetch_resistance(self) -> float:
-        """Fetch resistance reading
-
-        Args:
-        none
-
-        Returns:
-        The most recent resistance measurement
-        """
-        return self.fetch("RES")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def read_function(self, function : str = "VOLT") -> float:
-        """Perform measurement and acquire reading.
-
-        This method configures the multimeter for the specified measurement function
-        if needed, then triggers a measurement and returns the result.
-
-        Args:
-            function: String containing the measurement function name.
-                      Common values are "VOLT", "CURR", "RES", "VOLT:AC", "CURR:AC".
-
-        Returns:
-            float: The measured value.
-        """
-
-        # If the function is already set, we don't want to set it again.
-        # The reason is that each time the function is set, the config
-        # is also reset. An example is auto range. When the function is set
-        # Autorange is automatically turned back to ON.
-        if (self.get_function() != function):
-            self.set_function(function)
+    # Convenience methods for common measurements
+    
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def measure_voltage(self) -> float:
+        """Measure DC voltage.
         
-        # If continuous initiation is enabled, then the :INITiate command 
-        # generates an error and ignores the Command. 
-        if "2000" in self.instrument_ID:
-            self.connection.write(":INITiate:CONTinuous OFF")
-
-        return float(self.connection.query("READ?"))
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def read_voltage(self) -> float:
-        """Perform DC voltage measurement and return the reading.
-
-        Configures the multimeter for DC voltage measurement if needed,
-        then triggers a measurement and returns the result.
-
-        Args:
-            None
-
         Returns:
             float: The measured DC voltage in volts.
         """
-        return self.read_function("VOLT")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def read_voltage_AC(self) -> float:
-        """Perform measurement and acquire reading.
-
-        Args:
-        none
-
+        return self.measure("VOLT")
+    
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def measure_voltage_ac(self) -> float:
+        """Measure AC voltage.
+        
         Returns:
-        float: the current voltage
+            float: The measured AC voltage in volts.
         """
-        return self.read_function("VOLT:AC")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def read_current(self, function : str = "CURRent:DC") -> float:
-        """Perform measurement and acquire reading.
-
-        Args:
-        none
-
-        Returns:
-        float: the current voltage
-        """
-        return self.read_function("CURR")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def read_current_AC(self, function : str = "CURRent:AC") -> float:
-        """Perform measurement and acquire reading.
-
-        Args:
-        none
-
-        Returns:
-        float: the current voltage
-        """
-        return self.read_function("CURR:AC")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def read_resistance(self, function : str = "RESistance") -> float:
-        """Perform measurement and acquire reading.
-
-        Args:
-        none
-
-        Returns:
-        float: the current voltage
-        """
-        return self.read_function("RES")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def measure_function(self, function : str = "VOLT") -> float:
-        """This command combines all of the other signal 
-           oriented measurement commands to perform a 
-          “one-shot” measurement and acquire the reading.
-
-        Args:
-        function: a given function. VOLTage:DC by default
-
-        Returns:
-        float: The measurement result
-        """
-
-        # If the function is already set, we don't want to set it again.
-        # The reason is that each time the function is set, the config
-        # is also reset. An example is auto range. When the function is set
-        # Autorange is automatically turned back to ON.
-        if (self.get_function() != function):
-            self.set_function(function)
-
-        return float(self.connection.query(f"MEASure:{function}?"))
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def measure_voltage(self) -> float:
-        """Measures the DC voltage
-
-        Args:
-        none
-
-        Returns:
-        float: The measurement result
-        """
-        return self.measure_function("VOLT")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def measure_voltage_AC(self) -> float:
-        """Measures the AC voltage
-
-        Args:
-        none
-
-        Returns:
-        float: The measurement result
-        """
-        return self.measure_function("VOLT:AC")
-
-
-    @visa_exception_handler(module_logger=logger)    
+        return self.measure("VOLT:AC")
+    
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
     def measure_current(self) -> float:
-        """Measures the DC current
-
-        Args:
-        none
-
-        Returns:
-        float: The measurement result
-        """
-        return self.measure_function("CURR")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def measure_current_AC(self, function : str = "CURRent:AC") -> float:
-        """Measures the AC voltage
-
-        Args:
-        none
-
-        Returns:
-        float: The measurement result
-        """
-        return self.measure_function("CURR:AC")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def measure_resistance(self, function : str = "RESistance") -> float:
-        """Measures the resistance
-
-        Args:
-        none
-
-        Returns:
-        float: The measurement result
-        """
-        return self.measure_function("RES")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def get_function(self) -> str:
-        """Gets the selected function.
-
-        Args:
-        minimum: The selected channel
-
-        Returns:
-        str: The current selected function.
-        """
-        current_function = self.connection.query("FUNCtion?")
-        return current_function.strip("\n").strip("\"")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def set_function(self, function: str) -> str:
-        """Gets the selected function.
-
-        Args:
-        function: The selected channel
-                                        VOLTage:AC
-                                        VOLTage[:DC]
-                                        VOLTage[:DC]:RATio
-                                        CURRent:AC
-                                        CURRent[:DC]
-                                        FREQuency[:VOLT]
-                                        FREQuency:CURR
-                                        FRESistance
-                                        PERiod[:VOLT]
-                                        PERiod:CURR
-                                        RESistance
-                                        DIODe
-                                        TCOuple
-                                        TEMPerature
-                                        CONTinuity
-        Returns:
-        The current selected function.
-
-        Raises:
-        Except: If the query fails.
-        """
-        self.connection.write(f":conf:{function}")
-
-        return self.get_function()
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def get_thermocouple_type(self) -> str:
-        if "2000" in self.instrument_ID:
-            retval = self.connection.query(f"TEMPerature:TCOUple:TYPE?")
-            return retval.strip("\n")
-
-        elif "2110" in self.instrument_ID:
-            retval = self.connection.query(f"TCOuple:TYPE?")
-            return retval
-
-        elif "4050" in self.instrument_ID:
-            return retval
-        elif "34401A":
-            return retval
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-            return retval     
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def set_thermocouple_type(self, thermocouple_type: str) -> str:
-        if "2000" in self.instrument_ID:
-            self.connection.write(f"TEMPerature:TCOuple:TYPE {thermocouple_type}")
-            retval = self.get_thermocouple_type()
-            return retval
-
-        elif "2110" in self.instrument_ID:
-            self.connection.write(f"TCOuple:TYPE {thermocouple_type}")
-            retval = self.get_thermocouple_type()
-            return retval
-
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-            return retval
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def turn_off_auto_range(self) -> str:
-        self.connection.write("VOLTage:DC:RANGe:AUTO OFF")
-        return self.get_auto_range_state()
-
-    @visa_exception_handler(module_logger=logger)    
-    def get_auto_range_state(self) -> str:
-        return self.connection.query("VOLTage:DC:RANGe:AUTO?").strip("\n")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def set_thermocouple_unit(self, unit: str):
-        """Identifies the instrument ID using *IDN? query.
-
-        Args:
-        unit: set the unit to one of the following:
-            Cel, Far, K
-
-        Returns:
-        bool if the identification was successful or not
-        """
-        self.connection.write(f"UNIT {unit}")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def get_voltage_range(self):
-        """Gets the selected function.
-
-        Args:
-        minimum: The selected channel
-
-        Returns:
-        The current selected function.
-        """
-        return self.get_range("VOLTage:DC")
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def get_range(self, function):
-        """Gets the selected function.
-
-        Args:
-        minimum: The selected channel
-
-        Returns:
-        The current selected function.
-        """
-        retval = sys.maxsize 
-        
-        if "2000" in self.instrument_ID:
-            retval = self.connection.query(f"{function}:RANGe?")
-            return float(retval)
-
-        elif "2110" in self.instrument_ID:
-            retval = self.connection.query(f"{function}:RANGe?")
-            return float(retval)
-
-        elif "4050" in self.instrument_ID:
-            retval = self.connection.query(f"{function}:RANGe?")
-            return float(retval)
-        elif "34401A":
-            retval = self.connection.query(f"{function}:RANGe?")
-            return float(retval)
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-            return retval
-        
-
-    @visa_exception_handler(module_logger=logger)    
-    def set_voltage_range(self, voltage_range):
-        """Sets the voltage range .
-
-        Args:
-        voltage_range: the given range
-
-        Returns:
-        float: the current range
-        """
-        self.set_range(voltage_range, "VOLTage:DC")
-        return self.get_voltage_range()
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def set_range(self, voltage_range: float, function):
-        """Gets the selected function.
-
-        Args:
-        minimum: The selected channel
-
-        Returns:
-        The current selected function.
-        """
-        retval = sys.maxsize 
-        
-        if "2000" in self.instrument_ID:
-
-            # Path to configure measurement range:
-            # Select range (0 to 1010).
-            self.connection.write(f"{function}:RANGe {voltage_range}")
-
-        elif "2110" in self.instrument_ID:
-            self.connection.write(f"{function}:RANGe {voltage_range}")
-
-        elif "4050" in self.instrument_ID:
-            self.connection.write(f"{function}:RANGe {voltage_range}")
-
-        elif "34401A":
-            self.connection.write(f"{function}:RANGe {voltage_range}")
-
-        else:
-            print(f"Device {self.instrument_ID} not in library")
-            return retval
-        
-
-    @visa_exception_handler(module_logger=logger)    
-    def get_error(self) -> str:
-        """Gets the first error in the error buffer.
-
-        Args:
-        none
-
-        Returns:
-        str: Either an error, or no error
-        """
-        # Get the error code from the multimeter
-        error_string = self.connection.query("SYSTem:ERRor?").strip("\n")
-
-        # If the error code is 0, we have no errors
-        # If the error code is anything other than 0, we have errors
-        
-        return error_string
-            
-
-    @visa_exception_handler(module_logger=logger)    
-    def reset(self):
-        """Reset the instrument to factory settings.
-        
-        This sends the *RST command to the instrument and returns it to a known state.
+        """Measure DC current.
         
         Returns:
-            bool: True if reset succeeded, False otherwise.
+            float: The measured DC current in amps.
         """
-        return super().reset()
-
-    @visa_exception_handler(module_logger=logger)    
-    def clear(self):
-        """Clear the instrument's status registers and error queue.
-        
-        This sends the *CLS command to the instrument.
+        return self.measure("CURR")
+    
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def measure_current_ac(self) -> float:
+        """Measure AC current.
         
         Returns:
-            bool: True if clear succeeded, False otherwise.
+            float: The measured AC current in amps.
         """
-        return super().clear()
-
-    def close(self) -> None:
-        """Close the connection to the multimeter.
+        return self.measure("CURR:AC")
+    
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def measure_resistance(self) -> float:
+        """Measure resistance.
         
-        This method should be called when finished using the instrument.
+        Returns:
+            float: The measured resistance in ohms.
         """
-        super().close_connection()
-        # No need for additional try/except since the base class handles it
-
-
-    """General PyVISA functions
-        write
-        query
-        query_ascii_values
-    """
-
-    @visa_exception_handler(module_logger=logger)    
-    def write(self, message : str) -> str:
-        self.connection.write(message)
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def query(self, message) -> str:
-        return self.connection.query(message)
-
-
-    @visa_exception_handler(module_logger=logger)    
-    def query_ascii_values(self, message) -> list:
-        return self.connection.query_ascii_values(message)
-
-    @visa_exception_handler(module_logger=logger)
-    def measure_statistics(self, function: str = "VOLT", samples: int = 10, delay: float = 0.1) -> Dict[str, float]:
+        return self.measure("RES")
+    
+    @parameter_validator(
+        function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        samples=lambda s: s > 0,
+        delay=lambda d: d >= 0
+    )
+    @visa_exception_handler(default_return_value={}, module_logger=logger)
+    def measure_statistics(self, function: str = "VOLT", samples: int = 10, 
+                         delay: float = 0.1) -> Dict[str, float]:
         """Measure multiple samples and return statistics.
         
         Args:
@@ -735,16 +238,13 @@ class Multimeter(LibraryTemplate):
         Returns:
             Dictionary of statistical values (min, max, mean, std_dev)
         """
-        import time
-        import numpy as np
-        
         # Set the measurement function
         self.set_function(function)
         
         # Take measurements
         measurements = []
-        for i in range(samples):
-            value = self.read_function(function)
+        for _ in range(samples):
+            value = self.read()
             measurements.append(value)
             time.sleep(delay)
             
@@ -760,8 +260,70 @@ class Multimeter(LibraryTemplate):
         
         logger.info(f"Measured {samples} {function} readings, mean: {result['mean']}, std_dev: {result['std_dev']}")
         return result
-
-    @visa_exception_handler(module_logger=logger)
+    
+    @parameter_validator(
+        function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        range_value=lambda r: r > 0
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_range(self, function: str, range_value: float) -> None:
+        """Set the measurement range for the specified function.
+        
+        Args:
+            function: Measurement function ("VOLT", "CURR", etc.)
+            range_value: Range value in appropriate units
+        """
+        self.write(f"{function}:RANG {range_value}")
+        logger.debug(f"Set {function} range to {range_value}")
+    
+    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def get_range(self, function: str) -> float:
+        """Get the current measurement range for the specified function.
+        
+        Args:
+            function: Measurement function ("VOLT", "CURR", etc.)
+            
+        Returns:
+            float: The current range setting
+        """
+        response = self.query(f"{function}:RANG?")
+        return float(response.strip())
+    
+    @parameter_validator(
+        function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        state=lambda s: isinstance(s, bool)
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_auto_range(self, function: str, state: bool = True) -> None:
+        """Enable or disable auto-ranging for the specified function.
+        
+        Args:
+            function: Measurement function ("VOLT", "CURR", etc.)
+            state: True to enable auto-range, False to disable
+        """
+        self.write(f"{function}:RANG:AUTO {1 if state else 0}")
+        logger.debug(f"Set {function} auto-range to {'ON' if state else 'OFF'}")
+    
+    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
+    def get_auto_range_state(self, function: str) -> bool:
+        """Get the current auto-range state for the specified function.
+        
+        Args:
+            function: Measurement function ("VOLT", "CURR", etc.)
+            
+        Returns:
+            bool: True if auto-range is enabled, False otherwise
+        """
+        response = self.query(f"{function}:RANG:AUTO?").strip()
+        return response == "1" or response.upper() == "ON"
+    
+    @parameter_validator(
+        source=lambda s: s.upper() in ["IMM", "EXT", "BUS"],
+        count=lambda c: c > 0
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
     def setup_trigger(self, source: str = "IMM", count: int = 1) -> None:
         """Configure trigger settings.
         
@@ -772,3 +334,410 @@ class Multimeter(LibraryTemplate):
         self.write(f"TRIG:SOUR {source}")
         self.write(f"TRIG:COUN {count}")
         logger.info(f"Set trigger source to {source}, count to {count}")
+    
+    @visa_exception_handler(default_return_value="0,No Error", module_logger=logger)
+    def get_error(self) -> str:
+        """Get the first error from the error queue.
+        
+        Returns:
+            str: Error message or "0,No Error" if no errors.
+        """
+        response = self.query("SYST:ERR?").strip("\n")
+        if not response.startswith("0,"):
+            logger.warning(f"Error in multimeter: {response}")
+        return response
+    
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
+    def reset(self) -> bool:
+        """Reset the instrument to factory settings.
+        
+        Returns:
+            bool: True if reset succeeded, False otherwise.
+        """
+        logger.info(f"Resetting {self.__class__.__name__}")
+        return super().reset()
+    
+    @visa_exception_handler(default_return_value=False, module_logger=logger)
+    def clear(self) -> bool:
+        """Clear the instrument's status registers and error queue.
+        
+        Returns:
+            bool: True if clear succeeded, False otherwise.
+        """
+        logger.info(f"Clearing {self.__class__.__name__} status")
+        return super().clear()
+    
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def close(self) -> None:
+        """Close the connection to the multimeter.
+        
+        This method should be called when finished using the instrument.
+        """
+        logger.info(f"Closing connection to {self.__class__.__name__}")
+        super().close_connection()
+
+
+class HP34401A(MultimeterBase):
+    """Class for HP 34401A Digital Multimeter.
+    
+    The HP 34401A is a 6½-digit, high-performance digital multimeter
+    with fast autoranging and high precision measurements.
+    """
+    
+    def __init__(self, instrument_address: str, nickname: Optional[str] = None,
+                identify: bool = True, timeout: int = 5000):
+        """Initialize connection to an HP 34401A multimeter.
+        
+        Args:
+            instrument_address: VISA address of the instrument.
+            nickname: User-defined name for the instrument.
+            identify: Whether to identify the instrument with *IDN?.
+            timeout: Connection timeout in milliseconds.
+        """
+        super().__init__(instrument_address, nickname, identify, timeout)
+        
+        # Apply model-specific configuration
+        self.write("DISP:TEXT:CLE")  # Clear the display
+        logger.info(f"Initialized HP 34401A multimeter at {instrument_address}")
+    
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def display_text(self, text: str) -> None:
+        """Display text on the multimeter's front panel.
+        
+        Args:
+            text: The text to display (up to 12 characters)
+        """
+        # Truncate text if needed - HP 34401A has a 12-character limit
+        if len(text) > 12:
+            text = text[:12]
+        
+        self.write(f'DISP:TEXT "{text}"')
+        logger.debug(f"Displayed text: {text}")
+    
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def clear_display(self) -> None:
+        """Clear the custom text from the display."""
+        self.write("DISP:TEXT:CLE")
+        logger.debug("Cleared display text")
+    
+    @parameter_validator(nplc=lambda n: 0.02 <= n <= 100)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_integration_time(self, nplc: float) -> None:
+        """Set the integration time for measurements.
+        
+        Args:
+            nplc: Number of power line cycles (0.02 to 100)
+                Higher values give more accuracy but slower measurements
+                
+        Raises:
+            ValueError: If NPLC is out of range
+        """
+        # Get the current function
+        current_function = self.get_function()
+        
+        # Set integration time for current function
+        self.write(f"{current_function}:NPLC {nplc}")
+        logger.debug(f"Set integration time to {nplc} NPLC for {current_function}")
+        
+    @parameter_validator(
+        samples=lambda s: 1 <= s <= 512,
+        count=lambda c: 1 <= c <= 50000
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def setup_data_logging(self, samples: int = 10, count: int = 1, delay: float = 0.0) -> None:
+        """Configure built-in data logging (useful for autonomous operation).
+        
+        Args:
+            samples: Number of samples per trigger (1-512)
+            count: Number of triggers (1-50000) 
+            delay: Delay between samples in seconds
+            
+        Raises:
+            ValueError: If parameters are out of range
+        """
+        self.write(f"TRIG:COUN {count}")
+        self.write(f"SAMP:COUN {samples}")
+        
+        if delay > 0:
+            self.write(f"SAMP:TIM {delay}")
+        
+        logger.debug(f"Setup data logging: {samples} samples, {count} triggers, {delay}s delay")
+
+
+class Keithley2000(MultimeterBase):
+    """Class for Keithley 2000 Digital Multimeter.
+    
+    The Keithley 2000 is a 6½-digit high-performance digital multimeter 
+    with extensive measurement capabilities.
+    """
+    
+    def __init__(self, instrument_address: str, nickname: Optional[str] = None,
+                identify: bool = True, timeout: int = 5000):
+        """Initialize connection to a Keithley 2000 multimeter.
+        
+        Args:
+            instrument_address: VISA address of the instrument.
+            nickname: User-defined name for the instrument.
+            identify: Whether to identify the instrument with *IDN?.
+            timeout: Connection timeout in milliseconds.
+        """
+        super().__init__(instrument_address, nickname, identify, timeout)
+        
+        # Disable beeper for less noise in the lab
+        self.write("SYST:BEEP:STAT OFF")
+        logger.info(f"Initialized Keithley 2000 multimeter at {instrument_address}")
+        
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read(self, function: Optional[str] = None) -> float:
+        """Perform measurement and acquire reading.
+        
+        Keithley 2000-specific implementation that handles continuous initiation.
+        
+        Args:
+            function: Optional function to set before reading.
+            
+        Returns:
+            float: The measured value or 0.0 if an error occurred.
+        """
+        # Set function if specified
+        if function:
+            current_function = self.get_function()
+            if current_function.upper() != function.upper():
+                self.set_function(function)
+        
+        # Disable continuous initiation for Keithley 2000
+        self.write(":INIT:CONT OFF")
+        
+        # Get a reading
+        response = self.query("READ?")
+        return float(response.strip())
+    
+    @parameter_validator(
+        state=lambda s: isinstance(s, bool),
+        type=lambda t: t.upper() in ['MOV', 'REP'],
+        count=lambda c: 1 <= c <= 100
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_filter(self, state: bool = True, type: str = "MOV", count: int = 10) -> None:
+        """Configure the measurement filter.
+        
+        Args:
+            state: True to enable filter, False to disable
+            type: Filter type ('MOV' for moving average, 'REP' for repeating)
+            count: Number of readings to average (1-100)
+            
+        Raises:
+            ValueError: If parameters are invalid
+        """
+        self.write(f"SENS:AVER:TCON {type}")
+        self.write(f"SENS:AVER:COUN {count}")
+        self.write(f"SENS:AVER {'ON' if state else 'OFF'}")
+        
+        logger.debug(f"Set filter: {'enabled' if state else 'disabled'}, type={type}, count={count}")
+    
+    @parameter_validator(
+        thermocouple_type=lambda t: t.upper() in ['J', 'K', 'T', 'E', 'R', 'S', 'B', 'N']
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_thermocouple_type(self, thermocouple_type: str) -> None:
+        """Set the thermocouple type for temperature measurements.
+        
+        Args:
+            thermocouple_type: Thermocouple type (J, K, T, E, R, S, B, N)
+            
+        Raises:
+            ValueError: If thermocouple_type is invalid
+        """
+        self.write(f"TEMP:TC:TYPE {thermocouple_type}")
+        logger.debug(f"Set thermocouple type to {thermocouple_type}")
+    
+    @visa_exception_handler(default_return_value="K", module_logger=logger)
+    def get_thermocouple_type(self) -> str:
+        """Get the current thermocouple type setting.
+        
+        Returns:
+            str: The thermocouple type
+        """
+        return self.query("TEMP:TC:TYPE?").strip()
+
+
+class Keithley2110(MultimeterBase):
+    """Class for Keithley 2110 Digital Multimeter.
+    
+    The Keithley 2110 is a 5½-digit digital multimeter designed for 
+    general purpose bench or systems applications.
+    """
+    
+    def __init__(self, instrument_address: str, nickname: Optional[str] = None,
+                identify: bool = True, timeout: int = 5000):
+        """Initialize connection to a Keithley 2110 multimeter.
+        
+        Args:
+            instrument_address: VISA address of the instrument.
+            nickname: User-defined name for the instrument.
+            identify: Whether to identify the instrument with *IDN?.
+            timeout: Connection timeout in milliseconds.
+        """
+        super().__init__(instrument_address, nickname, identify, timeout)
+        
+        # Disable beeper for less noise in the lab
+        self.write("SYST:BEEP:STAT OFF")
+        logger.info(f"Initialized Keithley 2110 multimeter at {instrument_address}")
+    
+    @parameter_validator(
+        state=lambda s: isinstance(s, bool),
+        type=lambda t: t.upper() in ['MOV', 'REP'],
+        count=lambda c: 1 <= c <= 100
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_filter(self, state: bool = True, type: str = "MOV", count: int = 10) -> None:
+        """Configure the measurement filter.
+        
+        Args:
+            state: True to enable filter, False to disable
+            type: Filter type ('MOV' for moving average, 'REP' for repeating)
+            count: Number of readings to average (1-100)
+            
+        Raises:
+            ValueError: If parameters are invalid
+        """
+        self.write(f"SENS:AVER:TCON {type}")
+        self.write(f"SENS:AVER:COUN {count}")
+        self.write(f"SENS:AVER {'ON' if state else 'OFF'}")
+        
+        logger.debug(f"Set filter: {'enabled' if state else 'disabled'}, type={type}, count={count}")
+    
+    @parameter_validator(
+        thermocouple_type=lambda t: t.upper() in ['J', 'K', 'T', 'E', 'R', 'S', 'B', 'N']
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_thermocouple_type(self, thermocouple_type: str) -> None:
+        """Set the thermocouple type for temperature measurements.
+        
+        Args:
+            thermocouple_type: Thermocouple type (J, K, T, E, R, S, B, N)
+            
+        Raises:
+            ValueError: If thermocouple_type is invalid
+        """
+        self.write(f"TC:TYPE {thermocouple_type}")
+        logger.debug(f"Set thermocouple type to {thermocouple_type}")
+    
+    @visa_exception_handler(default_return_value="K", module_logger=logger)
+    def get_thermocouple_type(self) -> str:
+        """Get the current thermocouple type setting.
+        
+        Returns:
+            str: The thermocouple type
+        """
+        return self.query("TC:TYPE?").strip()
+        
+    @parameter_validator(
+        unit=lambda u: u.upper() in ['C', 'CEL', 'F', 'FAR', 'K']
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_temperature_unit(self, unit: str) -> None:
+        """Set the temperature measurement unit.
+        
+        Args:
+            unit: Temperature unit ('C'/'CEL' for Celsius, 
+                                   'F'/'FAR' for Fahrenheit, 
+                                   'K' for Kelvin)
+                                   
+        Raises:
+            ValueError: If the unit is invalid
+        """
+        # Standardize input
+        if unit.upper() in ['C', 'CEL']:
+            std_unit = 'CEL'
+        elif unit.upper() in ['F', 'FAR']:
+            std_unit = 'FAR'
+        else:
+            std_unit = 'K'
+            
+        self.write(f"UNIT:TEMP {std_unit}")
+        logger.debug(f"Set temperature unit to {std_unit}")
+
+
+class TektronixDMM4050(MultimeterBase):
+    """Class for Tektronix DMM4050 Digital Multimeter.
+    
+    The Tektronix DMM4050 is a 6½-digit precision digital multimeter with
+    extensive measurement and analysis capabilities.
+    """
+    
+    def __init__(self, instrument_address: str, nickname: Optional[str] = None,
+                identify: bool = True, timeout: int = 5000):
+        """Initialize connection to a Tektronix DMM4050 multimeter.
+        
+        Args:
+            instrument_address: VISA address of the instrument.
+            nickname: User-defined name for the instrument.
+            identify: Whether to identify the instrument with *IDN?.
+            timeout: Connection timeout in milliseconds.
+        """
+        super().__init__(instrument_address, nickname, identify, timeout)
+        logger.info(f"Initialized Tektronix DMM4050 multimeter at {instrument_address}")
+    
+    @parameter_validator(
+        primary_function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        secondary_function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS]
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def enable_dual_display(self, primary_function: str, secondary_function: str) -> None:
+        """Configure the dual display mode.
+        
+        Args:
+            primary_function: Primary measurement function
+            secondary_function: Secondary measurement function
+            
+        Raises:
+            ValueError: If function names are invalid
+        """
+        self.set_function(primary_function)
+        self.write(f"SENS:FUNC2 \"{secondary_function}\"")
+        self.write("DISP:WIND2:STAT ON")
+        
+        logger.debug(f"Enabled dual display: primary={primary_function}, secondary={secondary_function}")
+    
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def disable_dual_display(self) -> None:
+        """Disable the dual display mode."""
+        self.write("DISP:WIND2:STAT OFF")
+        logger.debug("Disabled dual display")
+    
+    @visa_exception_handler(default_return_value=(0.0, 0.0), module_logger=logger)
+    def read_dual_display(self) -> Tuple[float, float]:
+        """Read both primary and secondary measurements.
+        
+        Returns:
+            tuple: (primary_value, secondary_value)
+        """
+        # Initiate and fetch primary measurement
+        primary = self.read()
+        
+        # Fetch secondary measurement
+        secondary = float(self.query("SENS:DATA2?").strip())
+        
+        return primary, secondary
+    
+    @parameter_validator(
+        rjunction_type=lambda t: t.upper() in ['INT', 'EXT', 'SIM']
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_temperature_reference_junction(self, rjunction_type: str, sim_value: float = 0.0) -> None:
+        """Set the reference junction type for thermocouple measurements.
+        
+        Args:
+            rjunction_type: Reference junction type ('INT', 'EXT', or 'SIM')
+            sim_value: Simulated junction temperature value (when using 'SIM')
+            
+        Raises:
+            ValueError: If junction type is invalid
+        """
+        self.write(f"TEMP:TRAN:TC:RJUN:TYPE {rjunction_type}")
+        
+        if rjunction_type.upper() == 'SIM':
+            self.write(f"TEMP:TRAN:TC:RJUN:SIM {sim_value}")
+            
+        logger.debug(f"Set reference junction to {rjunction_type}")

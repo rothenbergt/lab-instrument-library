@@ -1,13 +1,16 @@
 """
-Python library containing general functions to control Keysight B2902A SMU.
+Python library for controlling Source Measure Units (SMUs) from various manufacturers.
 
 This module provides a standardized interface for working with Source Measure Units
 to perform precision voltage/current sourcing and measurement.
 
 Supported devices:
 - Keysight B2902A
+- Keithley 2400 Series (via SMU class)
+- Rohde & Schwarz NGU Series (via SMU class)
 """
 
+from abc import ABC, abstractmethod
 from .base import LibraryTemplate
 from .utils import visa_exception_handler
 from typing import Dict, Optional, Union, List, Any, Tuple, Callable
@@ -15,11 +18,195 @@ import numpy as np
 import time
 import sys
 import logging
+import re
 
 # Setup module logger
 logger = logging.getLogger(__name__)
 
-class KeysightB2902A(LibraryTemplate):
+
+class SMUBase(LibraryTemplate, ABC):
+    """Base class for Source Measure Units.
+    
+    This abstract base class provides common functionality for different SMU models.
+    It implements methods for basic source and measurement operations that are shared across
+    various SMU instruments.
+    
+    Attributes:
+        instrument_address (str): VISA address of the instrument
+        connection: PyVISA resource connection to the instrument
+        instrumentID (str): Identification string of the instrument
+        nickname (str): Optional user-defined name for the instrument
+    """
+    
+    # Default limits - should be overridden by subclasses
+    MAX_VOLTAGE = 60.0  # Default max voltage in volts
+    MAX_CURRENT = 3.0   # Default max current in amps
+    
+    def __init__(self, instrument_address: str, nickname: str = None, 
+                identify: bool = True, timeout: int = 5000):
+        """Initialize the SMU base class.
+        
+        Args:
+            instrument_address: VISA address of the instrument
+            nickname: User-defined name for the instrument
+            identify: Whether to identify the instrument with *IDN?
+            timeout: Connection timeout in milliseconds
+        """
+        super().__init__(instrument_address, nickname, identify, timeout)
+        logger.info(f"Initialized SMU connection at {instrument_address}")
+    
+    @abstractmethod
+    def set_voltage(self, voltage: float, current_limit: float = 0.1, channel: int = 1) -> None:
+        """Set the output voltage and current limit.
+        
+        Args:
+            voltage: Target voltage in volts
+            current_limit: Current limit in amperes
+            channel: Output channel (1 or 2)
+        """
+        pass
+    
+    @abstractmethod
+    def set_current(self, current: float, voltage_limit: float = 10.0, channel: int = 1) -> None:
+        """Set the output current and voltage limit.
+        
+        Args:
+            current: Target current in amperes
+            voltage_limit: Voltage limit in volts
+            channel: Output channel (1 or 2)
+        """
+        pass
+    
+    @abstractmethod
+    def measure_voltage(self, channel: int = 1) -> float:
+        """Measure the actual output voltage.
+        
+        Args:
+            channel: Output channel (1 or 2)
+            
+        Returns:
+            float: The measured voltage in volts
+        """
+        pass
+    
+    @abstractmethod
+    def measure_current(self, channel: int = 1) -> float:
+        """Measure the actual output current.
+        
+        Args:
+            channel: Output channel (1 or 2)
+            
+        Returns:
+            float: The measured current in amperes
+        """
+        pass
+    
+    @abstractmethod
+    def enable_output(self, channel: int = 1) -> None:
+        """Enable the output of the specified channel.
+        
+        Args:
+            channel: Output channel (1 or 2)
+        """
+        pass
+    
+    @abstractmethod
+    def disable_output(self, channel: int = 1) -> None:
+        """Disable the output of the specified channel.
+        
+        Args:
+            channel: Output channel (1 or 2)
+        """
+        pass
+    
+    # Common implementations that might work across SMU types
+    
+    def get_all_measurements(self, channel: int = 1) -> Dict[str, float]:
+        """Get all measurements for a channel.
+        
+        Args:
+            channel: Output channel (1 or 2)
+            
+        Returns:
+            Dict with voltage, current, resistance and power measurements
+        """
+        voltage = self.measure_voltage(channel)
+        current = self.measure_current(channel)
+        
+        # Calculate resistance and power
+        if abs(current) > 1e-12:  # Avoid division by zero
+            resistance = voltage / current
+        else:
+            resistance = float('inf')
+            
+        power = voltage * current
+        
+        return {
+            "voltage": voltage,
+            "current": current,
+            "resistance": resistance,
+            "power": power
+        }
+    
+    def measure_resistance(self, channel: int = 1) -> float:
+        """Measure resistance using V/I calculation.
+        
+        Args:
+            channel: Channel number (1 or 2)
+            
+        Returns:
+            float: Resistance in ohms
+        """
+        voltage = self.measure_voltage(channel)
+        current = self.measure_current(channel)
+        
+        if abs(current) > 1e-12:  # Avoid division by zero
+            resistance = voltage / current
+        else:
+            resistance = float('inf')
+            
+        logger.debug(f"Measured resistance on channel {channel}: {resistance} ohms")
+        return resistance
+    
+    def measure_power(self, channel: int = 1) -> float:
+        """Measure power using V*I calculation.
+        
+        Args:
+            channel: Channel number (1 or 2)
+            
+        Returns:
+            float: Power in watts
+        """
+        voltage = self.measure_voltage(channel)
+        current = self.measure_current(channel)
+        power = voltage * current
+        
+        logger.debug(f"Measured power on channel {channel}: {power} watts")
+        return power
+    
+    def close(self) -> None:
+        """Close the connection to the instrument safely.
+        
+        This disables outputs before closing to ensure safety.
+        """
+        try:
+            # Try to disable outputs for safety
+            self.disable_output(1)
+            try:
+                # Some SMUs might have a second channel
+                self.disable_output(2)
+            except Exception:
+                pass
+            logger.info("Disabled all outputs")
+        except Exception as e:
+            logger.warning(f"Error disabling outputs: {str(e)}")
+            
+        # Close the connection
+        super().close_connection()
+        logger.info("Closed connection to SMU")
+
+
+class KeysightB2902A(SMUBase):
     """Enhanced controller for Keysight B2902A Source Measure Unit.
     
     This class extends the basic SMU functionality with advanced features

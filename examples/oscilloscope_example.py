@@ -1,11 +1,11 @@
 """
-Example demonstrating how to use the Oscilloscope class.
+Simple example demonstrating how to use the Tektronix oscilloscope classes.
 
-This example shows how to connect to an oscilloscope, configure it,
-capture waveforms, and save screenshots.
+This example shows how to connect to a TDS2000 series oscilloscope,
+configure it, capture a waveform, and save a screenshot.
 """
 
-from lab_instrument_library import Oscilloscope
+from lab_instrument_library.oscilloscope import TektronixTDS2000
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -14,29 +14,29 @@ def main():
     """Run the oscilloscope example."""
     # Create an oscilloscope instance - replace with your oscilloscope's address
     print("Connecting to oscilloscope...")
-    oscilloscope = Oscilloscope("GPIB0::7::INSTR")
+    scope = TektronixTDS2000("GPIB0::7::INSTR")
     
     # Stop any ongoing acquisition
     print("Stopping acquisition...")
-    oscilloscope.stop()
+    scope.stop()
     
     # Configure the oscilloscope
     print("\nConfiguring oscilloscope...")
-    oscilloscope.set_channel_label(1, "Signal")  # Updated to use snake_case
-    oscilloscope.setVerticalScale(1, 0.5)  # 0.5V/division
-    oscilloscope.changeGraticule("GRID")
-    oscilloscope.changeWaveFormIntensity(80)
+    scope.set_channel_label(1, "Signal")
+    scope.set_vertical_scale(1, 0.5)  # 0.5V/division
+    scope.change_graticule("GRID")
+    scope.change_waveform_intensity(80)
     
     # Start acquisition
     print("Starting acquisition...")
-    oscilloscope.run()
+    scope.run()
     
     # Display a message on the oscilloscope
-    oscilloscope.show_message("Controlled by Python")
+    scope.show_message("Controlled by Python")
     
     # Capture a waveform
     print("\nCapturing waveform data...")
-    time_data, voltage_data = oscilloscope.acquire(1, show=False)
+    time_data, voltage_data = scope.acquire(1, show=False)
     
     if len(time_data) > 0 and len(voltage_data) > 0:
         # Plot the captured data
@@ -61,15 +61,15 @@ def main():
     # Save a screenshot of the oscilloscope display
     print("\nSaving oscilloscope screenshot...")
     screenshot_filename = "oscilloscope_screenshot.png"
-    oscilloscope.save_image(screenshot_filename)  # Updated to use snake_case
+    scope.save_image(screenshot_filename)
     print(f"Screenshot saved as {screenshot_filename}")
     
     # Remove the message
-    oscilloscope.remove_message()  # Updated to use snake_case
+    scope.remove_message()
     
     # Close the connection
     print("\nClosing connection...")
-    oscilloscope.close()
+    scope.close()
     print("Connection closed.")
 
 if __name__ == "__main__":

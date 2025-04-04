@@ -113,9 +113,8 @@ class NetworkAnalyzer(LibraryTemplate):
             self.write("INIT:IMM")  # Trigger the sweep
             
             if wait:
-                # Wait for the sweep to complete
-                self.write("*OPC?")
-                self.connection.read()  # Read the response to wait for completion
+                # Wait for the operation to complete
+                return self.wait_for_operation_complete()
             
             logger.info("Sweep completed")
             return True
@@ -269,25 +268,18 @@ class NetworkAnalyzer(LibraryTemplate):
         """Clear the instrument's status registers and error queue."""
         logger.info("Clearing network analyzer status")
         return super().clear()
-
+    
     def reset(self) -> bool:
         """Reset the instrument to factory settings."""
         logger.info("Resetting network analyzer")
         success = super().reset()
-        
-        # Additional reset actions specific to network analyzers
-        try:
-            # Reset display format
-            self.write("CALC:FORM MLOG")
-            # Reset sweep parameters to defaults
-            self.write("SENS:SWE:TYPE LIN")
-            logger.info("Network analyzer successfully reset")
-        except Exception as e:
-            logger.error(f"Error during additional reset steps: {str(e)}")
-            return False
-        
+        # Reset display format
+        self.write("CALC:FORM MLOG")
+        # Reset sweep parameters to defaults
+        self.write("SENS:SWE:TYPE LIN")
+        logger.info("Network analyzer successfully reset")
         return success
-
+        
     def close(self) -> None:
         """Close the connection to the network analyzer safely."""
         logger.info("Closing network analyzer connection")
@@ -307,7 +299,7 @@ class NetworkAnalyzer(LibraryTemplate):
         # Ensure proper extension
         if not filename.lower().endswith(f'.{format.lower()}'):
             filename += f'.{format.lower()}'
-        
+
         self.write(f"HCOP:DEV:LANG {format}")
         self.write("HCOP:DEST 'MMEM'")
         self.write(f"MMEM:NAME '{filename}'")

@@ -8,8 +8,8 @@ manufacturers while abstracting away device-specific command syntax.
 
 Available instruments:
 ---------------------
-Multimeter
-    Interface for digital multimeters from various manufacturers
+Multimeters
+    Interfaces for digital multimeters from various manufacturers (HP34401A, Keithley2000, etc.)
 Supply
     Interface for DC power supplies
 SMU
@@ -34,9 +34,9 @@ __version__ = '0.1.0'
 from .base import LibraryTemplate
 
 # Import instrument classes
-from .multimeter import Multimeter
+from .multimeter import MultimeterBase, HP34401A, Keithley2000, Keithley2110, TektronixDMM4050
 from .supply import Supply
-from .smu import SMU
+from .smu import KeysightB2902A
 from .oscilloscope import Oscilloscope
 from .function_generator import AFG3000
 from .network_analyzer import NetworkAnalyzer
