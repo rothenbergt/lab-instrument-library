@@ -10,11 +10,12 @@ import pyvisa
 import logging
 import time
 from typing import Optional, Union, List, Any, Tuple
+from abc import ABC, abstractmethod
 
 # Setup module logger
 logger = logging.getLogger(__name__)
 
-class LibraryTemplate:
+class LibraryTemplate(ABC):
     """Base class for lab instrument interfaces.
     
     This class implements common functionality for all instrument types, including
@@ -116,6 +117,27 @@ class LibraryTemplate:
     
     # Alias for backward compatibility
     close = close_connection
+    
+    # Context manager support
+    def __enter__(self):
+        """Context manager entry method.
+        
+        Returns:
+            self: The instrument instance for use in with statements.
+        """
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit method.
+        
+        Ensures the connection is closed when exiting a with statement.
+        
+        Args:
+            exc_type: Exception type if an exception was raised, else None.
+            exc_val: Exception value if an exception was raised, else None.
+            exc_tb: Exception traceback if an exception was raised, else None.
+        """
+        self.close_connection()
 
     def identify(self) -> Optional[str]:
         """Query the instrument's identification string.
@@ -275,3 +297,13 @@ class LibraryTemplate:
         except Exception as e:
             logger.warning(f"Error waiting for operation complete: {str(e)}")
             return False
+    
+    # Abstract methods that should be implemented by all instrument classes
+    @abstractmethod
+    def get_error(self) -> str:
+        """Get the first error from the instrument's error queue.
+        
+        Returns:
+            str: Error message or indication of no error.
+        """
+        pass

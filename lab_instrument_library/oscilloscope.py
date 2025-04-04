@@ -120,8 +120,10 @@ class Oscilloscope(LibraryTemplate):
         logger.debug(f"Setting channel {channel} vertical scale to {scale} V/div")
         self.write(f"CH{channel}:SCA {scale}")
 
-    # Keep old method as alias
+    # Legacy aliases for backward compatibility
     setVerticalScale = set_vertical_scale
+    setChannelLabel = set_channel_label
+    saveImage = save_image
 
     @visa_exception_handler(module_logger=logger)
     def auto_set(self) -> None:
@@ -129,7 +131,7 @@ class Oscilloscope(LibraryTemplate):
         logger.info("Executing autoset command")
         self.write("AUTOSET EXECUTE")
 
-    # Keep old method as alias
+    # Legacy alias for backward compatibility
     autoSet = auto_set
 
     @visa_exception_handler(module_logger=logger)
@@ -170,7 +172,7 @@ class Oscilloscope(LibraryTemplate):
         logger.debug(f"Changing graticule mode to {graticule}")
         self.write(f"GRAT:MODE {graticule}")
 
-    # Keep old method as alias
+    # Legacy alias for backward compatibility
     changeGraticule = change_graticule
 
     @visa_exception_handler(module_logger=logger)
@@ -183,7 +185,7 @@ class Oscilloscope(LibraryTemplate):
         logger.debug(f"Setting waveform intensity to {intensity}")
         self.write(f"DISplay:INTENSITY:WAVEFORM {intensity}")
 
-    # Keep old method as alias
+    # Legacy alias for backward compatibility
     changeWaveFormIntensity = change_waveform_intensity
 
     @visa_exception_handler(module_logger=logger)
@@ -217,6 +219,20 @@ class Oscilloscope(LibraryTemplate):
             logger.error(f"Error exporting waveform: {str(e)}")
             return False
 
+    @visa_exception_handler(module_logger=logger)
+    def get_error(self) -> str:
+        """Get the first error from the instrument's error queue.
+        
+        Returns:
+            str: Error message or indication of no error.
+        """
+        try:
+            error = self.query("EVENT?")
+            return error.strip()
+        except Exception as e:
+            logger.error(f"Error retrieving error queue: {str(e)}")
+            return "ERROR: Could not read error queue"
+
     def reset(self) -> bool:
         """Reset the instrument to factory settings.
         
@@ -235,7 +251,3 @@ class Oscilloscope(LibraryTemplate):
         """Close the connection to the oscilloscope."""
         logger.info("Closing oscilloscope connection")
         super().close_connection()
-
-    # Add aliases for backward compatibility:
-    saveImage = save_image
-    setChannelLabel = set_channel_label
