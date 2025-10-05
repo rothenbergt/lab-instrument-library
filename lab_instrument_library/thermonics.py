@@ -9,6 +9,10 @@ Supported devices:
 - Thermonics T-2420
 - Laboratory Ovens
 - X-Stream 4300
+
+Documentation references:
+- Thermonics T-2500SE User Manual: https://www.manualsdir.com/manuals/319832/atec-thermonics-t-2500se.html
+- Thermonics T-2500SE Datasheet: https://www.atecorp.com/getmedia/51110e58-1f65-4c4c-9580-58511566b537/thermonics-t-2500se_datasheet_1.pdf
 """
 
 import pyvisa

@@ -423,6 +423,139 @@ class OscilloscopeBase(LibraryTemplate, ABC):
         logger.debug(f"Setting acquisition mode to {acquisition_mode.upper()}")
         self.write(f"ACQuire:MODe {acquisition_mode.upper()}")
     
+    @parameter_validator(count=lambda c: isinstance(c, int) and c > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_num_averages(self, count: int) -> None:
+        """Set number of averages for AVERAGE acquisition mode."""
+        logger.debug(f"Setting number of averages to {count}")
+        self.write(f"ACQuire:NUMAVg {count}")
+
+    @parameter_validator(length=lambda l: isinstance(l, int) and l > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_record_length(self, length: int) -> None:
+        """Set record length (number of points)."""
+        logger.debug(f"Setting record length to {length}")
+        self.write(f"HORizontal:RECOrdlength {length}")
+
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_horizontal_position(self, position: float) -> None:
+        """Set horizontal position (time position)."""
+        logger.debug(f"Setting horizontal position to {position}")
+        self.write(f"HORizontal:POSition {position}")
+
+    @parameter_validator(channel=lambda c: c > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def enable_channel(self, channel: int, state: bool = True) -> None:
+        """Enable or disable a channel (generic)."""
+        if channel > self.max_channels:
+            logger.error(f"Channel {channel} is invalid. This oscilloscope has {self.max_channels} channels.")
+            return
+        logger.debug(f"{'Enabling' if state else 'Disabling'} channel {channel}")
+        self.write(f"SELECT:CH{channel} {1 if state else 0}")
+
+    @parameter_validator(channel=lambda c: c > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def disable_channel(self, channel: int) -> None:
+        """Disable a channel (generic)."""
+        self.enable_channel(channel, False)
+
+    @parameter_validator(
+        measurement_type=lambda m: isinstance(m, str) and len(m) > 0,
+        channel=lambda c: c > 0
+    )
+    @visa_exception_handler(default_return_value=float('nan'), module_logger=logger)
+    def measure(self, measurement_type: str, channel: int) -> float:
+        """Perform a single immediate measurement on a channel and return its value.
+
+        Example measurement types (Tektronix): FREQuency, PK2PK, MEAN, RMS, PERIod, RISEtime, FALLtime
+        """
+        if channel > self.max_channels:
+            logger.error(f"Channel {channel} is invalid. This oscilloscope has {self.max_channels} channels.")
+            return float('nan')
+        mtype = measurement_type.upper()
+        logger.debug(f"Measuring {mtype} on CH{channel}")
+        self.write(f"MEASUrement:IMMed:SOUrce1 CH{channel}")
+        self.write(f"MEASUrement:IMMed:TYPe {mtype}")
+        value_str = self.query("MEASUrement:IMMed:VALue?")
+        try:
+            return float(value_str.strip())
+        except Exception:
+            logger.warning(f"Could not parse measurement value '{value_str}' for {mtype} on CH{channel}")
+            return float('nan')
+
+    # Convenience measurement wrappers
+    @visa_exception_handler(default_return_value=float('nan'), module_logger=logger)
+    def measure_frequency(self, channel: int) -> float:
+        return self.measure("FREQuency", channel)
+
+    @visa_exception_handler(default_return_value=float('nan'), module_logger=logger)
+    def measure_vpp(self, channel: int) -> float:
+        return self.measure("PK2PK", channel)
+
+    @visa_exception_handler(default_return_value=float('nan'), module_logger=logger)
+    def measure_mean(self, channel: int) -> float:
+        return self.measure("MEAN", channel)
+
+    @visa_exception_handler(default_return_value=float('nan'), module_logger=logger)
+    def measure_rms(self, channel: int) -> float:
+        return self.measure("RMS", channel)
+
+    @visa_exception_handler(default_return_value=float('nan'), module_logger=logger)
+    def measure_period(self, channel: int) -> float:
+        return self.measure("PERIod", channel)
+
+    @parameter_validator(
+        channel=lambda c: c > 0,
+        scale=lambda s: s is None or s > 0,
+        position=lambda p: p is None or (-5 <= p <= 5),
+        coupling=lambda cu: cu is None or cu.upper() in ["AC", "DC", "GND"],
+        enabled=lambda e: e is None or isinstance(e, bool),
+        label=lambda l: l is None or len(l) <= 32
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def configure_channel(
+        self,
+        channel: int,
+        scale: Optional[float] = None,
+        position: Optional[float] = None,
+        coupling: Optional[str] = None,
+        enabled: Optional[bool] = None,
+        label: Optional[str] = None,
+    ) -> None:
+        """Convenience method to configure common channel properties in one call."""
+        if channel > self.max_channels:
+            raise ValueError(f"Channel {channel} is invalid. This oscilloscope has {self.max_channels} channels.")
+        if scale is not None:
+            self.set_vertical_scale(channel, scale)
+        if position is not None:
+            self.set_vertical_position(channel, position)
+        if coupling is not None:
+            self.set_coupling(channel, coupling)
+        if enabled is not None:
+            self.enable_channel(channel, enabled)
+        if label is not None:
+            self.set_channel_label(channel, label)
+
+    @parameter_validator(
+        acquisition_mode=lambda m: m is None or m.upper() in ["SAMPLE", "AVERAGE", "ENVELOPE", "PEAK", "HIRES"],
+        averages=lambda a: a is None or (isinstance(a, int) and a > 0),
+        timebase=lambda t: t is None or t > 0
+    )
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def configure_acquisition(
+        self,
+        acquisition_mode: Optional[str] = None,
+        averages: Optional[int] = None,
+        timebase: Optional[float] = None,
+    ) -> None:
+        """Configure acquisition mode/averages/timebase in one call."""
+        if acquisition_mode is not None:
+            self.set_acquisition_mode(acquisition_mode)
+        if averages is not None:
+            self.set_num_averages(averages)
+        if timebase is not None:
+            self.set_horizontal_scale(timebase)
+    
 
 class TektronixTDS2000(OscilloscopeBase):
     """Class for Tektronix TDS2000 Series Digital Oscilloscopes.

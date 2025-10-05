@@ -10,6 +10,12 @@ Supported devices:
 - Keysight E3649A (Dual output, 0-35V/0.8A or 0-60V/0.5A)
 - Keysight E36313A (Triple output, 6V/5A, 25V/1A, 25V/1A)
 - Keysight E36234A (Quad output, 0-30V/1A*2, 0-6V/5A, 0-25V/1A)
+
+Documentation references:
+- Keysight E3631A User's Guide: https://www.keysight.com/us/en/assets/9018-01308/user-manuals/9018-01308.pdf
+- Agilent E3632A User Manual: https://www.manualslib.com/manual/2820/Agilent-Technologies-E3632a.html
+- E36300 Series Programming Guide (E36313A, E36234A): https://www.keysight.com/us/en/assets/9018-04577/programming-guides/9018-04577.pdf
+- E36300 Series User's Guide: https://www.keysight.com/us/en/assets/9018-04576/user-manuals/9018-04576.pdf
 """
 
 import pyvisa
