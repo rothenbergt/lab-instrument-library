@@ -1,242 +1,170 @@
 # Lab Instrument Library
 
-A Python library for interfacing with various laboratory instruments through GPIB/VISA connections.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/rothenbergt/lab-instrument-library/actions/workflows/ci.yml/badge.svg)](https://github.com/rothenbergt/lab-instrument-library/actions)
 
-## Overview
+A Python library for interfacing with laboratory instruments through GPIB/VISA connections. Control multimeters, oscilloscopes, power supplies, SMUs, and more with a unified, Pythonic API.
 
-The Lab Instrument Library provides a unified interface to control common laboratory instruments from different manufacturers while abstracting away device-specific command syntax. It aims to simplify lab automation by providing consistent methods for common operations.
+**Born from real-world lab experience** - this library supports the common instruments you'll find in professional electronics and research labs, curated from years of hands-on testing and characterization work.
 
-## Instruments Supported
+## Quick Start
 
-### Multimeters
+```python
+from lab_instrument_library import Multimeter
 
-- HP 34401A (via HP34401A class)
-- Keithley 2000 (via Keithley2000 class)
-- Keithley 2110 (via Keithley2110 class)
-- Tektronix DMM4050 (via TektronixDMM4050 class)
+# Auto-detect and connect to any supported multimeter
+dmm = Multimeter("GPIB0::15::INSTR")
+voltage = dmm.measure_voltage()
+print(f"Measured: {voltage} V")
+dmm.close()
+```
 
-### Power Supplies
+## Supported Instruments
 
-- Agilent E3631A
-- Agilent E3632A
-- Keysight E3649A
-- Keysight E36313A
-- Keysight E36234A
+<details>
+<summary><b>Multimeters</b> (4 models)</summary>
 
-### Source Measure Units (SMUs)
+- HP 34401A
+- Keithley 2000
+- Keithley 2110
+- Tektronix DMM4050
 
-- Keysight B2902A (via KeysightB2902A class)
+</details>
+
+<details>
+<summary><b>Source Measure Units (SMUs)</b> (3 models)</summary>
+
+- Keysight B2902A (2-channel, advanced features)
 - Keithley 228
 - Keithley 238
 
-### Oscilloscopes
+</details>
 
-- Tektronix TDS1000/2000 Series (via TektronixTDS2000 class)
-- Tektronix DPO/MSO2000 Series (via TektronixDPO2000 class)
-- Tektronix MDO3000 Series (via TektronixMDO3000 class)
-- Tektronix TBS1000 Series (via TektronixTBS1000 class)
+<details>
+<summary><b>Power Supplies</b> (5 models)</summary>
 
-### Function Generators
+- Agilent E3631A (Triple output)
+- Agilent E3632A (Single output)
+- Keysight E3649A (Dual output)
+- Keysight E36313A (Triple output)
+- Keysight E36234A (Quad output)
 
-- Tektronix AFG3000 series
+</details>
 
-### Network Analyzers
+<details>
+<summary><b>Oscilloscopes</b> (4 series)</summary>
 
-- Agilent/Keysight E5061B
+- Tektronix TDS1000/2000 Series
+- Tektronix DPO/MSO2000 Series
+- Tektronix MDO3000 Series
+- Tektronix TBS1000 Series
 
-### Temperature Instruments
+</details>
 
-- Thermocouples
-- Thermometers
-- Thermonics temperature forcing systems (T-2500SE, T-2420, X-Stream 4300)
+<details>
+<summary><b>Other Instruments</b></summary>
 
-## Architecture
+- **Function Generators**: Tektronix AFG3000 series
+- **Network Analyzers**: Agilent/Keysight E5061B
+- **Temperature Controllers**: Thermonics T-2500SE, T-2420, X-Stream 4300
+- **Temperature Sensors**: Thermocouples, Thermometers
 
-The library follows a consistent pattern with base classes and device-specific implementations:
-
-```
-Instrument Base Classes
-└── Model-Specific Classes
-```
-
-For example:
-```
-MultimeterBase
-├── HP34401A  
-├── Keithley2000
-├── Keithley2110
-└── TektronixDMM4050
-
-OscilloscopeBase
-├── TektronixTDS2000
-├── TektronixDPO2000
-├── TektronixMDO3000
-└── TektronixTBS1000
-```
-
-This architecture allows for:
-- Common methods shared across all instruments of a type
-- Specialized methods and capabilities for specific instrument models
-- Parameter validation tailored to each instrument's limitations
-- Consistent error handling through decorators
+</details>
 
 ## Installation
-
-### Requirements
-
-- Python 3.6+
-- PyVISA
-- PyVISA-py (for non-NI VISA implementations)
-- NumPy
-- SciPy
-- Pandas
-- Matplotlib
-- PIL (Pillow)
-- An appropriate VISA backend (e.g., National Instruments VISA, Keysight VISA)
-
-### Local Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/rothenbergt/lab-instrument-library.git
-
-# Navigate to the project directory
 cd lab-instrument-library
 
 # Install in development mode
 pip install -e .
 ```
 
+**Requirements**: Python 3.10+, PyVISA, NumPy, and a VISA backend (NI-VISA or Keysight IO Libraries)
+
 ## Usage Examples
 
-### Multimeter
+### Multimeter - Quick Measurements
 
 ```python
 from lab_instrument_library import Multimeter
 
-# Connect using the generic Multimeter factory (auto-detects the model using *IDN?)
-multimeter = Multimeter("GPIB0::15::INSTR")
+# Auto-detect instrument model
+dmm = Multimeter("GPIB0::15::INSTR")
 
-# Quick configuration helper (function, range, autorange, NPLC)
-multimeter.configure(function="VOLT", range_value=10.0, autorange=False, nplc=10)
+# Quick measurements
+voltage = dmm.measure_voltage()
+current = dmm.measure_current()
+resistance = dmm.measure_resistance()
 
-# Read voltage measurement (triggers and returns using current configuration)
-voltage = multimeter.read_voltage()
-print(f"Measured voltage: {voltage} V")
+# Statistics from multiple readings
+stats = dmm.measure_statistics("VOLT", samples=10)
+print(f"Mean: {stats['mean']:.6f} V, StdDev: {stats['std_dev']:.6f} V")
 
-# Measure voltage (configure VOLT, trigger, return in one step)
-voltage = multimeter.measure_voltage()
-print(f"Measured voltage: {voltage} V")
-
-# Change measurement function to current
-multimeter.set_function("CURR")
-
-# Read current measurement
-current = multimeter.read_current()
-print(f"Measured current: {current} A")
-
-# Get statistics from multiple measurements
-stats = multimeter.measure_statistics("VOLT", samples=10, delay=0.1)
-print(f"Mean voltage: {stats['mean']} V")
-print(f"Standard deviation: {stats['std_dev']} V")
-
-# Clean up resources when finished
-multimeter.close()
+dmm.close()
 ```
 
-### Power Supply
+### Power Supply - Set and Measure
 
 ```python
 from lab_instrument_library import Supply
 
-# Connect using the Supply factory; specify model if auto-detect is ambiguous
 ps = Supply("GPIB0::26::INSTR", selected_instrument="E36313A")
 
-# Set voltage and current limit on channel 1
+# Set 3.3V with 500mA current limit on channel 1
 ps.set_voltage(3.3, 0.5, channel=1)
-
-# Enable the output on channel 1
 ps.enable_output(channel=1)
 
-# Measure the actual output
-voltage = ps.measure_voltage(channel=1)
-current = ps.measure_current(channel=1)
-print(f"Output: {voltage:.3f}V, {current:.3f}A")
+# Measure actual output
+v = ps.measure_voltage(channel=1)
+i = ps.measure_current(channel=1)
+print(f"Output: {v:.3f}V @ {i*1000:.1f}mA")
 
-# Disable the output before disconnecting
 ps.disable_output(channel=1)
 ps.close()
 ```
 
-### Oscilloscope
-
-```python
-from lab_instrument_library.oscilloscope import TektronixTDS2000
-
-# Connect to a specific oscilloscope model
-scope = TektronixTDS2000("GPIB0::7::INSTR")
-
-# Configure the scope
-scope.auto_set()  # Auto-configure for the current signal
-scope.set_channel_label(1, "Signal")
-scope.set_vertical_scale(1, 0.5)  # 0.5V/division
-scope.set_horizontal_scale(0.001)  # 1ms/division
-
-# Capture waveform data
-time, voltage = scope.acquire(1)
-
-# Export data to CSV
-scope.export_waveform_to_csv(1, "waveform_data.csv")
-
-# Save a screenshot
-scope.save_image("capture.png")
-
-# Close the connection
-scope.close()
-```
-
-### Function Generator
-
-```python
-from lab_instrument_library.function_generator import AFG3000
-
-# Connect to a function generator
-fg = AFG3000("GPIB0::11::INSTR")
-
-# Configure a sine wave output
-fg.set_function("SIN", 1)
-fg.set_frequency(1, 1000)  # 1 kHz
-fg.set_amplitude(1, 2.0)   # 2.0 Vpp
-
-# Enable output
-fg.enable_output(1)
-
-# Close connection when done
-fg.close()
-```
-
-### SMU (Source Measure Unit)
+### SMU - IV Characterization
 
 ```python
 from lab_instrument_library.smu import KeysightB2902A
 
-# Connect to a specific SMU model
 smu = KeysightB2902A("USB0::0x0957::0xCE18::MY51141974::INSTR")
 
-# Configure and enable channel 1 as a voltage source
-smu.set_voltage(3.3, 0.1)  # 3.3V with 100mA current limit
-smu.enable_output(1)
+# Perform voltage sweep and measure current
+voltages, currents = smu.measure_iv_curve(
+    channel=1,
+    start_v=0,
+    stop_v=5,
+    points=50,
+    current_limit=0.1
+)
 
-# Measure the results
-measurements = smu.get_all_measurements(1)
-print(f"Voltage: {measurements['voltage']}V")
-print(f"Current: {measurements['current']}A")
-print(f"Power: {measurements['power']}W")
-print(f"Resistance: {measurements['resistance']}Ω")
-
-# Turn off output and close connection
-smu.disable_output(1)
 smu.close()
+```
+
+### Oscilloscope - Capture Waveform
+
+```python
+from lab_instrument_library.oscilloscope import TektronixTDS2000
+
+scope = TektronixTDS2000("GPIB0::7::INSTR")
+
+# Configure and capture
+scope.auto_set()
+scope.set_vertical_scale(1, 0.5)  # Channel 1: 500mV/div
+scope.set_horizontal_scale(0.001)  # 1ms/div
+
+# Acquire waveform data
+time, voltage = scope.acquire(1)
+
+# Save screenshot
+scope.save_image("capture.png")
+
+scope.close()
 ```
 
 ### Temperature Control
@@ -244,50 +172,90 @@ smu.close()
 ```python
 from lab_instrument_library.thermonics import Thermonics
 
-# Connect to a temperature controller
 tc = Thermonics("GPIB0::21::INSTR", selected_instrument="Thermonics T-2500SE")
 
-# Set temperature to -40°C
+# Set and monitor temperature
 tc.set_temperature(-40)
-
-# Read current temperature
 temp = tc.get_temperature()
-print(f"Current temperature: {temp}°C")
+print(f"Current: {temp}°C")
 
-# Return to ambient when done
+# Return to ambient
 tc.select_ambient()
 tc.close()
 ```
 
-## Error Handling
+## Architecture
 
-All instrument classes use the `@visa_exception_handler` decorator to provide consistent error handling:
+The library uses a base class pattern for consistency:
 
-- Graceful recovery from communication failures
-- Detailed logging of errors
-- Sensible default values when operations fail
-- Parameter validation with the `@parameter_validator` decorator
+```
+LibraryTemplate (base.py)
+├── MultimeterBase → HP34401A, Keithley2000, Keithley2110, TektronixDMM4050
+├── SMUBase → KeysightB2902A, Keithley228, Keithley238
+├── OscilloscopeBase → TektronixTDS2000, TektronixDPO2000, ...
+└── PowerSupplyBase → E3631A, E3632A, E36313A, ...
+```
+
+**Key Features:**
+
+- 🎯 Common methods shared across instrument types
+- 🔧 Model-specific capabilities when needed
+- ✅ Parameter validation via decorators
+- 🛡️ Consistent error handling
+
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=lab_instrument_library --cov-report=html
+
+# Run specific test file
+pytest tests/test_multimeter_factory.py -v
+```
+
+### Project Structure
+
+```
+lab-instrument-library/
+├── lab_instrument_library/   # Main package
+│   ├── multimeter.py         # Multimeter implementations
+│   ├── smu.py                # SMU implementations
+│   ├── oscilloscope.py       # Oscilloscope implementations
+│   ├── supply.py             # Power supply implementations
+│   ├── base.py               # Base classes
+│   └── utils/                # Utilities and decorators
+├── tests/                    # Test suite
+├── examples/                 # Usage examples
+└── docs/                     # Documentation
+```
+
+## Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with tests
+4. Run the test suite (`pytest`)
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+## Documentation
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- 📚 **Full API Documentation**: [Coming soon]
+- 💡 **More Examples**: See the [`examples/`](examples/) directory
+- 🐛 **Issues & Bugs**: [GitHub Issues](https://github.com/rothenbergt/lab-instrument-library/issues)
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/improvement`)
-3. Make your changes
-4. Commit your changes (`git commit -am 'Add new feature'`)
-5. Push to the branch (`git push origin feature/improvement`)
-6. Create a new Pull Request
+---
 
-## Development
-
-For developers working on this library, there are several utility classes and helpers:
-
-- `LibraryTemplate`: Base class for all instrument classes
-- `visa_exception_handler`: Decorator for consistent error handling
-- `parameter_validator`: Decorator for validating method parameters
-- Various logging utilities in the `utils` module
+**Tip**: All instrument classes include links to official programming manuals in their docstrings. Check the source code for SCPI command references!

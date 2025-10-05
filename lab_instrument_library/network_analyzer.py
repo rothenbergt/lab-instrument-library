@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import logging
 import time
 from typing import Dict, List, Tuple, Optional, Union, Any
-import PySimpleGUI as sg
 from .base import LibraryTemplate
 from .utils import visa_exception_handler
 
@@ -123,17 +122,13 @@ class NetworkAnalyzer(LibraryTemplate):
             return False
     
     def get_trace_data(self) -> Tuple[List[float], List[float]]:
-        """Get the current trace data.
-        
-        Returns:
-            Tuple containing frequency and measurement data arrays.
-        """
+        """Get the current trace data (frequency and real values)."""
         # Get frequency data
         self.write("SENS:X:VAL?")
         freq_data = self.connection.read_raw()
         frequencies = [float(v) for v in freq_data.decode().strip().split(',')]
         
-        # Get measurement data
+        # Get measurement data (formatted real values)
         self.write("CALC:DATA:FDAT?")
         meas_data = self.connection.read_raw()
         values = [float(v) for v in meas_data.decode().strip().split(',')]
@@ -142,6 +137,19 @@ class NetworkAnalyzer(LibraryTemplate):
         real_values = values[::2]
         
         return frequencies, real_values
+
+    def get_trace_data_complex(self) -> Tuple[List[float], List[complex]]:
+        """Get frequency and complex data from analyzer (SDAT)."""
+        # Frequency axis
+        self.write("SENS:X:VAL?")
+        freq_data = self.connection.read_raw()
+        frequencies = [float(v) for v in freq_data.decode().strip().split(',')]
+        
+        # Complex data: SDAT returns interleaved real, imag
+        self.write("CALC:DATA:SDAT?")
+        data = [float(v) for v in self.connection.read_raw().decode().strip().split(',')]
+        complex_vals = [complex(data[i], data[i+1]) for i in range(0, len(data), 2)]
+        return frequencies, complex_vals
     
     def measure_s_parameter(self, parameter: str = "S21") -> pd.DataFrame:
         """Measure a specific S-parameter across the frequency range.
@@ -164,6 +172,68 @@ class NetworkAnalyzer(LibraryTemplate):
         
         return df
     
+    @visa_exception_handler(module_logger=logger)
+    def set_if_bandwidth(self, ifbw: float):
+        """Set IF bandwidth in Hz."""
+        self.write(f"SENS:BWID {ifbw}")
+        logger.info(f"Set IF bandwidth to {ifbw} Hz")
+
+    @visa_exception_handler(module_logger=logger)
+    def set_averaging(self, count: int = 16, enabled: bool = True):
+        """Configure sweep averaging."""
+        self.write(f"SENS:AVER:COUN {count}")
+        self.write(f"SENS:AVER:STAT {'ON' if enabled else 'OFF'}")
+        logger.info(f"Averaging {'on' if enabled else 'off'} count {count}")
+
+    @visa_exception_handler(module_logger=logger)
+    def clear_averaging(self):
+        """Clear averaging data."""
+        self.write("SENS:AVER:CLE")
+
+    @visa_exception_handler(module_logger=logger)
+    def set_sweep_type(self, sweep_type: str = 'LIN'):
+        """Set sweep type (LIN or LOG)."""
+        st = sweep_type.upper()
+        if st not in ['LIN', 'LOG']:
+            st = 'LIN'
+        self.write(f"SENS:SWE:TYPE {st}")
+
+    @visa_exception_handler(module_logger=logger)
+    def set_format(self, fmt: str = 'MLOG'):
+        """Set display/data format: MLOG, PHAS, SMIT, SADM, etc."""
+        self.write(f"CALC:FORM {fmt}")
+
+    @visa_exception_handler(module_logger=logger)
+    def enable_source(self, state: bool = True):
+        """Enable/disable RF source output."""
+        self.write(f"SOUR:POW:STAT {'ON' if state else 'OFF'}")
+
+    @visa_exception_handler(module_logger=logger)
+    def set_trigger_source(self, source: str = 'IMM'):
+        """Set trigger source: IMM, EXT, BUS."""
+        self.write(f"TRIG:SOUR {source}")
+
+    @visa_exception_handler(module_logger=logger)
+    def peak_search(self, direction: str = 'NEXT'):
+        """Move marker to peak next/previous."""
+        d = direction.upper()
+        if d not in ['NEXT', 'PREV']:
+            d = 'NEXT'
+        self.write(f"CALC:MARK:FUNC:PEAK:{d}")
+
+    @visa_exception_handler(module_logger=logger)
+    def save_touchstone(self, filename: str, ports: int = 2, parameter: str = 'SRI') -> bool:
+        """Save data as Touchstone (Snp) file on the analyzer.
+
+        parameter example: 'SRI' for real/imag, 'SDB' for dB/angle
+        """
+        # Ensure extension matches ports
+        if not filename.lower().endswith(f".s{ports}p"):
+            filename += f".s{ports}p"
+        self.write(f"MMEM:STOR:SNP '{filename}'")
+        logger.info(f"Saved Touchstone to {filename}")
+        return True
+
     def measure_s_parameters(self) -> pd.DataFrame:
         """Measure all four S-parameters.
         

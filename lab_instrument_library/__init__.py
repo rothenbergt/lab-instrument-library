@@ -37,6 +37,8 @@ from .base import LibraryTemplate
 from .multimeter import Multimeter, MultimeterBase, HP34401A, Keithley2000, Keithley2110, TektronixDMM4050
 from .supply import Supply
 from .smu import KeysightB2902A
+# Alias for convenience
+SMU = KeysightB2902A
 from .oscilloscope import Oscilloscope
 from .function_generator import AFG3000
 from .network_analyzer import NetworkAnalyzer

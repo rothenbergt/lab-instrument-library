@@ -272,6 +272,60 @@ class KeysightB2902A(SMUBase):
         self._function_mode[channel] = "CURR"
     
     @visa_exception_handler(module_logger=logger)
+    def configure_output(self, mode: str, value: float, compliance: float, channel: int = 1) -> None:
+        """Configure output mode and set value with compliance in one call.
+        
+        Args:
+            mode: "VOLT" or "CURR"
+            value: Voltage or current setpoint
+            compliance: Current limit if VOLT mode, voltage limit if CURR mode
+            channel: Output channel (1 or 2)
+        """
+        m = mode.upper()
+        if m == "VOLT":
+            self.set_voltage(value, compliance, channel)
+        else:
+            self.set_current(value, compliance, channel)
+
+    @visa_exception_handler(module_logger=logger)
+    def set_voltage_compliance(self, current_limit: float, channel: int = 1) -> None:
+        """Set current compliance limit for voltage source mode."""
+        self.write(f"SOUR{channel}:CURR:LIMIT {current_limit}")
+
+    @visa_exception_handler(module_logger=logger)
+    def get_voltage_compliance(self, channel: int = 1) -> float:
+        """Get current compliance limit for voltage source mode."""
+        resp = self.query(f"SOUR{channel}:CURR:LIMIT?")
+        return float(resp.strip())
+
+    @visa_exception_handler(module_logger=logger)
+    def set_current_compliance(self, voltage_limit: float, channel: int = 1) -> None:
+        """Set voltage compliance limit for current source mode."""
+        self.write(f"SOUR{channel}:VOLT:LIMIT {voltage_limit}")
+
+    @visa_exception_handler(module_logger=logger)
+    def get_current_compliance(self, channel: int = 1) -> float:
+        """Get voltage compliance limit for current source mode."""
+        resp = self.query(f"SOUR{channel}:VOLT:LIMIT?")
+        return float(resp.strip())
+
+    @visa_exception_handler(module_logger=logger)
+    def ramp_voltage(self, target: float, step: float = 0.1, delay: float = 0.05, channel: int = 1) -> None:
+        """Ramp voltage to a target with specified step and delay for stability."""
+        try:
+            current = self.get_voltage(channel)
+        except Exception:
+            current = 0.0
+        direction = 1 if target >= current else -1
+        v = current
+        while (direction == 1 and v < target) or (direction == -1 and v > target):
+            v = v + direction * abs(step)
+            if (direction == 1 and v > target) or (direction == -1 and v < target):
+                v = target
+            self.set_voltage(v, self.get_voltage_compliance(channel) if hasattr(self, 'get_voltage_compliance') else 0.1, channel)
+            time.sleep(max(0.0, delay))
+
+    @visa_exception_handler(module_logger=logger)
     def get_voltage(self, channel: int = 1) -> float:
         """Get the set voltage value.
         
@@ -1040,7 +1094,7 @@ class KeysightB2902A(SMUBase):
         self.enable_output(channel)
         
         try:
-            print(f"Sweeping voltage from {start}V to {stop}V in {steps} steps")
+            logger.info(f"Sweeping voltage from {start}V to {stop}V in {steps} steps")
             
             # Execute the sweep
             self.execute_sweep(channel, wait=True)
@@ -1053,9 +1107,9 @@ class KeysightB2902A(SMUBase):
             for i, (voltage, current) in enumerate(zip(voltages, current_values)):
                 # Store results
                 result = {
-                    'set_voltage': voltage,
-                    'measured_current': current,
-                    'measured_power': voltage * current
+                    'set_voltage': float(voltage),
+                    'measured_current': float(current),
+                    'measured_power': float(voltage * current)
                 }
                 results.append(result)
                 
@@ -1063,14 +1117,13 @@ class KeysightB2902A(SMUBase):
                 if callback:
                     callback(voltage, current, i)
                 
-                print(f"\rStep {i+1}/{steps}: {voltage:.3f}V, {current*1000:.3f}mA", end="")
-                
-            print("\nSweep complete")
+                logger.debug(f"Step {i+1}/{steps}: {voltage:.3f}V, {current*1000:.3f}mA")
+            
+            logger.info("Sweep complete")
             return results
             
         except Exception as e:
             logger.error(f"Error during voltage sweep: {str(e)}")
-            print(f"\nError during voltage sweep: {str(e)}")
             return results
         finally:
             # Safety: return to a safe voltage
