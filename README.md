@@ -81,9 +81,18 @@ cd lab-instrument-library
 
 # Install in development mode
 pip install -e .
+
+# Optional: Install with GUI utilities
+pip install -e ".[gui]"
+
+# Optional: Install with development tools
+pip install -e ".[dev]"
 ```
 
-**Requirements**: Python 3.10+, PyVISA, NumPy, and a VISA backend (NI-VISA or Keysight IO Libraries)
+**Requirements**:
+- Python 3.10+
+- PyVISA and a VISA backend (NI-VISA or Keysight IO Libraries)
+- NumPy, Pandas, Matplotlib, Pillow (installed automatically)
 
 ## Usage Examples
 
