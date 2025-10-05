@@ -57,7 +57,6 @@ def create_run_folder(base_path: str) -> str:
         run_dir = os.path.join(base_path, f"run{new_run_num}")
         
         logger.info(f"Creating run folder {new_run_num}")
-        print(f"Creating folder run{new_run_num}")
         
         # Create the directory structure
         os.makedirs(run_dir, exist_ok=True)
@@ -70,7 +69,6 @@ def create_run_folder(base_path: str) -> str:
         
     except OSError as e:
         logger.error(f"Error creating run folders: {str(e)}")
-        print(f"Error creating run folders: {str(e)}")
         # Create a fallback directory structure
         run_dir = os.path.join(base_path, "run1")
         os.makedirs(run_dir, exist_ok=True)
@@ -212,54 +210,51 @@ def countdown(seconds: int, message: str = "Time remaining") -> None:
         print("\rCountdown terminated by user                   ")
 
 
-def scan_gpib_devices(start: int = 0, end: int = 32, timeout: int = 1000) -> Dict[int, str]:
+def scan_gpib_devices(start: int = 0, end: int = 32, timeout: int = 1000, verbose: bool = False) -> Dict[int, str]:
     """Scan GPIB bus for connected instruments.
-    
+
     Scans the specified range of GPIB addresses and attempts to identify
     instruments at each address.
-    
+
     Args:
         start: Starting GPIB address to scan.
         end: Ending GPIB address to scan.
         timeout: Communication timeout in milliseconds.
-        
+        verbose: If True, logs progress for each address.
+
     Returns:
         Dictionary mapping GPIB addresses to instrument identification strings.
     """
-    devices = {}
+    devices: Dict[int, str] = {}
     rm = pyvisa.ResourceManager()
-    
-    print(f"Scanning GPIB addresses {start}-{end}...")
-    print("-" * 60)
-    print(f"{'Address':<8} {'Connected':<12} {'Identification'}")
-    print("-" * 60)
-    
+
+    if verbose:
+        logger.info(f"Scanning GPIB addresses {start}-{end}...")
+
     for address in range(start, end + 1):
-        resource_name = f'GPIB0::{address}::INSTR'
-        print(f"{address:<8}", end=" ")
-        
+        resource_name = f"GPIB0::{address}::INSTR"
+        if verbose:
+            logger.info(f"Checking address {address}")
         try:
             # Attempt to open the resource with a short timeout
             instrument = rm.open_resource(resource_name)
             instrument.timeout = timeout
-            print(f"{'Connected':<12}", end=" ")
-            
             # Try to get identification
             try:
                 idn = instrument.query("*IDN?").strip()
                 devices[address] = idn
-                print(f"{idn}")
+                if verbose:
+                    logger.info(f"{address}: Connected - {idn}")
             except Exception:
-                print("(No identification available)")
                 devices[address] = "Unknown instrument"
-                
+                if verbose:
+                    logger.info(f"{address}: Connected - Unknown instrument")
             # Close the connection
             instrument.close()
-            
         except Exception:
-            print("No device")
-    
-    print("-" * 60)
+            if verbose:
+                logger.info(f"{address}: No device")
+
     return devices
 
 
