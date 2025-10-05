@@ -112,12 +112,16 @@ pip install -e .
 ### Multimeter
 
 ```python
-from lab_instrument_library.multimeter import HP34401A
+from lab_instrument_library import Multimeter
 
-# Connect to a specific multimeter model using its VISA address
-multimeter = HP34401A("GPIB0::15::INSTR")
+# Connect using the generic Multimeter factory (auto-detects the model using *IDN?)
+multimeter = Multimeter("GPIB0::15::INSTR")
 
-# Read voltage measurement
+# Read voltage measurement (triggers and returns using current configuration)
+voltage = multimeter.read_voltage()
+print(f"Measured voltage: {voltage} V")
+
+# Measure voltage (configure VOLT, trigger, return in one step)
 voltage = multimeter.measure_voltage()
 print(f"Measured voltage: {voltage} V")
 
@@ -125,7 +129,7 @@ print(f"Measured voltage: {voltage} V")
 multimeter.set_function("CURR")
 
 # Read current measurement
-current = multimeter.measure_current()
+current = multimeter.read_current()
 print(f"Measured current: {current} A")
 
 # Get statistics from multiple measurements

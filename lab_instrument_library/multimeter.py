@@ -31,12 +31,75 @@ from .utils.decorators import visa_exception_handler, parameter_validator, retry
 # Setup module logger
 logger = logging.getLogger(__name__)
 
-# Valid measurement functions for all multimeters
+# Valid measurement functions for all multimeters (canonical tokens)
 VALID_FUNCTIONS = [
-    "VOLT", "VOLT:DC", "VOLT:AC", 
-    "CURR", "CURR:DC", "CURR:AC",
-    "RES", "FRES", "FREQ", "CONT", "DIOD", "TEMP"
+    "VOLT", "VOLT:AC",
+    "CURR", "CURR:AC",
+    "RES", "FRES",
+    # Additional functions that some meters support but we don't expose helpers for here
+    "FREQ", "CONT", "DIOD", "TEMP"
 ]
+
+# Synonyms map -> canonical token (case-insensitive keys)
+_FUNCTION_SYNONYMS: Dict[str, str] = {
+    # Voltage DC
+    "VOLT": "VOLT",
+    "VOLT:DC": "VOLT",
+    "DCV": "VOLT",
+    "VDC": "VOLT",
+    "VOLT DC": "VOLT",
+    "VOLTAGE": "VOLT",
+    "VOLTAGE DC": "VOLT",
+    # Voltage AC
+    "VOLT:AC": "VOLT:AC",
+    "VAC": "VOLT:AC",
+    "ACV": "VOLT:AC",
+    "VOLT AC": "VOLT:AC",
+    "VOLTAGE AC": "VOLT:AC",
+    # Current DC
+    "CURR": "CURR",
+    "CURR:DC": "CURR",
+    "IDC": "CURR",
+    "DCI": "CURR",
+    "CURRENT": "CURR",
+    "CURRENT DC": "CURR",
+    # Current AC
+    "CURR:AC": "CURR:AC",
+    "IAC": "CURR:AC",
+    "ACI": "CURR:AC",
+    "CURRENT AC": "CURR:AC",
+    # Resistance 2-wire
+    "RES": "RES",
+    "OHM": "RES",
+    "OHMS": "RES",
+    "RESISTANCE": "RES",
+    # Resistance 4-wire
+    "FRES": "FRES",
+    "4W": "FRES",
+    "4WIRE": "FRES",
+    "4-WIRE": "FRES",
+    "4WIRE RESISTANCE": "FRES",
+}
+
+def _normalize_function_token(user_input: str) -> str:
+    """Normalize a user-specified function token to a canonical SCPI token.
+
+    Args:
+        user_input: Function token or synonym (e.g., 'VOLT:DC', 'VAC', 'ohms').
+    Returns:
+        Canonical token string present in VALID_FUNCTIONS.
+    Raises:
+        ValueError if the token cannot be normalized to a supported function.
+    """
+    token = (user_input or "").strip().upper()
+    canonical = _FUNCTION_SYNONYMS.get(token, token)
+    if canonical not in VALID_FUNCTIONS:
+        raise ValueError(f"Unsupported measurement function: '{user_input}'. Supported: {', '.join(VALID_FUNCTIONS)}")
+    return canonical
+
+def _pretty_function(token: str) -> str:
+    token = _normalize_function_token(token)
+    return token.replace(":", " ")
 
 class MultimeterBase(LibraryTemplate, ABC):
     """Base class for all multimeters.
@@ -65,7 +128,7 @@ class MultimeterBase(LibraryTemplate, ABC):
         super().__init__(instrument_address, nickname, identify, timeout)
         logger.info(f"Initialized {self.__class__.__name__} at {instrument_address}")
     
-    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @parameter_validator(function=lambda f: _normalize_function_token(f) is not None)
     @visa_exception_handler(default_return_value=None, module_logger=logger)
     def set_function(self, function: str) -> str:
         """Set the measurement function.
@@ -76,12 +139,11 @@ class MultimeterBase(LibraryTemplate, ABC):
                     "CURR" (DC current), "CURR:AC" (AC current), "RES" (resistance).
             
         Returns:
-            str: The current selected function.
-        
-        Raises:
-            ValueError: If function is not supported.
+            str: The current selected function (canonical token).
         """
-        self.write(f":CONF:{function}")
+        canonical = _normalize_function_token(function)
+        # Prefer CONF for broad compatibility
+        self.write(f":CONF:{canonical}")
         return self.get_function()
     
     @visa_exception_handler(default_return_value="VOLT", module_logger=logger)
@@ -89,12 +151,18 @@ class MultimeterBase(LibraryTemplate, ABC):
         """Get the currently selected measurement function.
 
         Returns:
-            str: The current selected function.
+            str: The current selected function (canonical token).
         """
         current_function = self.query("FUNC?")
-        return current_function.strip("\n").strip("\"")
+        # Responses often include quotes, e.g. "VOLT"
+        token = current_function.strip().strip("\"")
+        try:
+            return _normalize_function_token(token)
+        except Exception:
+            # If normalization fails, return raw token
+            return token
 
-    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @parameter_validator(function=lambda f: _normalize_function_token(f) is not None)
     @visa_exception_handler(default_return_value=0.0, module_logger=logger)
     def measure(self, function: str) -> float:
         """Perform a measurement using the specified function.
@@ -114,7 +182,8 @@ class MultimeterBase(LibraryTemplate, ABC):
             self.set_function(function)
         
         # Use MEASure command for a complete measurement
-        response = self.query(f"MEAS:{function}?")
+        canonical = _normalize_function_token(function)
+        response = self.query(f"MEAS:{canonical}?")
         return float(response.strip())
         
     @visa_exception_handler(default_return_value=0.0, module_logger=logger)
@@ -132,9 +201,10 @@ class MultimeterBase(LibraryTemplate, ABC):
         """
         # Set function if specified
         if function:
+            canonical = _normalize_function_token(function)
             current_function = self.get_function()
-            if current_function.upper() != function.upper():
-                self.set_function(function)
+            if current_function.upper() != canonical.upper():
+                self.set_function(canonical)
         
         # Get a reading
         response = self.query("READ?")
@@ -152,9 +222,10 @@ class MultimeterBase(LibraryTemplate, ABC):
         """
         # Set function if specified
         if function:
+            canonical = _normalize_function_token(function)
             current_function = self.get_function()
-            if current_function.upper() != function.upper():
-                self.set_function(function)
+            if current_function.upper() != canonical.upper():
+                self.set_function(canonical)
         
         # Initiate a measurement
         self.initiate()
@@ -175,6 +246,7 @@ class MultimeterBase(LibraryTemplate, ABC):
     
     # Convenience methods for common measurements
     
+    # Measure wrappers (configure + trigger + return)
     @visa_exception_handler(default_return_value=0.0, module_logger=logger)
     def measure_voltage(self) -> float:
         """Measure DC voltage.
@@ -219,9 +291,64 @@ class MultimeterBase(LibraryTemplate, ABC):
             float: The measured resistance in ohms.
         """
         return self.measure("RES")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def measure_4w_resistance(self) -> float:
+        """Measure 4-wire resistance (FRES)."""
+        return self.measure("FRES")
+
+    # Read wrappers (reuse current config, trigger + return)
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read_voltage(self) -> float:
+        return self.read("VOLT")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read_voltage_ac(self) -> float:
+        return self.read("VOLT:AC")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read_current(self) -> float:
+        return self.read("CURR")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read_current_ac(self) -> float:
+        return self.read("CURR:AC")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read_resistance(self) -> float:
+        return self.read("RES")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def read_4w_resistance(self) -> float:
+        return self.read("FRES")
+
+    # Fetch wrappers (no trigger, return last reading)
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch_voltage(self) -> float:
+        return self.fetch("VOLT")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch_voltage_ac(self) -> float:
+        return self.fetch("VOLT:AC")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch_current(self) -> float:
+        return self.fetch("CURR")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch_current_ac(self) -> float:
+        return self.fetch("CURR:AC")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch_resistance(self) -> float:
+        return self.fetch("RES")
+
+    @visa_exception_handler(default_return_value=0.0, module_logger=logger)
+    def fetch_4w_resistance(self) -> float:
+        return self.fetch("FRES")
     
     @parameter_validator(
-        function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        function=lambda f: _normalize_function_token(f) is not None,
         samples=lambda s: s > 0,
         delay=lambda d: d >= 0
     )
@@ -262,7 +389,7 @@ class MultimeterBase(LibraryTemplate, ABC):
         return result
     
     @parameter_validator(
-        function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        function=lambda f: _normalize_function_token(f) is not None,
         range_value=lambda r: r > 0
     )
     @visa_exception_handler(default_return_value=None, module_logger=logger)
@@ -273,10 +400,11 @@ class MultimeterBase(LibraryTemplate, ABC):
             function: Measurement function ("VOLT", "CURR", etc.)
             range_value: Range value in appropriate units
         """
-        self.write(f"{function}:RANG {range_value}")
-        logger.debug(f"Set {function} range to {range_value}")
+        canonical = _normalize_function_token(function)
+        self.write(f"{canonical}:RANG {range_value}")
+        logger.debug(f"Set {canonical} range to {range_value}")
     
-    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @parameter_validator(function=lambda f: _normalize_function_token(f) is not None)
     @visa_exception_handler(default_return_value=0.0, module_logger=logger)
     def get_range(self, function: str) -> float:
         """Get the current measurement range for the specified function.
@@ -287,11 +415,12 @@ class MultimeterBase(LibraryTemplate, ABC):
         Returns:
             float: The current range setting
         """
-        response = self.query(f"{function}:RANG?")
+        canonical = _normalize_function_token(function)
+        response = self.query(f"{canonical}:RANG?")
         return float(response.strip())
     
     @parameter_validator(
-        function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS],
+        function=lambda f: _normalize_function_token(f) is not None,
         state=lambda s: isinstance(s, bool)
     )
     @visa_exception_handler(default_return_value=None, module_logger=logger)
@@ -302,10 +431,11 @@ class MultimeterBase(LibraryTemplate, ABC):
             function: Measurement function ("VOLT", "CURR", etc.)
             state: True to enable auto-range, False to disable
         """
-        self.write(f"{function}:RANG:AUTO {1 if state else 0}")
-        logger.debug(f"Set {function} auto-range to {'ON' if state else 'OFF'}")
+        canonical = _normalize_function_token(function)
+        self.write(f"{canonical}:RANG:AUTO {1 if state else 0}")
+        logger.debug(f"Set {canonical} auto-range to {'ON' if state else 'OFF'}")
     
-    @parameter_validator(function=lambda f: f.upper() in [fn.upper() for fn in VALID_FUNCTIONS])
+    @parameter_validator(function=lambda f: _normalize_function_token(f) is not None)
     @visa_exception_handler(default_return_value=False, module_logger=logger)
     def get_auto_range_state(self, function: str) -> bool:
         """Get the current auto-range state for the specified function.
@@ -316,7 +446,8 @@ class MultimeterBase(LibraryTemplate, ABC):
         Returns:
             bool: True if auto-range is enabled, False otherwise
         """
-        response = self.query(f"{function}:RANG:AUTO?").strip()
+        canonical = _normalize_function_token(function)
+        response = self.query(f"{canonical}:RANG:AUTO?").strip()
         return response == "1" or response.upper() == "ON"
     
     @parameter_validator(
@@ -741,3 +872,69 @@ class TektronixDMM4050(MultimeterBase):
             self.write(f"TEMP:TRAN:TC:RJUN:SIM {sim_value}")
             
         logger.debug(f"Set reference junction to {rjunction_type}")
+
+
+# Factory entry point ---------------------------------------------------------
+def Multimeter(instrument_address: str,
+               nickname: Optional[str] = None,
+               identify: bool = True,
+               timeout: int = 5000,
+               model_override: Optional[str] = None) -> MultimeterBase:
+    """Generic multimeter factory.
+
+    Opens the resource, detects the instrument model via *IDN? (unless a model_override
+    is provided), and returns an instance of the appropriate model class.
+
+    Args:
+        instrument_address: VISA address (e.g., 'GPIB0::22::INSTR').
+        nickname: Optional nickname for logs.
+        identify: Whether to identify again in the returned instance.
+        timeout: Timeout in ms.
+        model_override: Optional explicit model selector: one of {'HP34401A','KEITHLEY2000','KEITHLEY2110','TEKTRONIXDMM4050'}.
+
+    Returns:
+        An instance of a MultimeterBase subclass.
+    """
+    rm = pyvisa.ResourceManager()
+    try:
+        res = rm.open_resource(instrument_address)
+        res.timeout = timeout
+        idn: str
+        if model_override:
+            idn = model_override.upper()
+        else:
+            try:
+                idn = str(res.query("*IDN?")).strip().upper()
+            except Exception:
+                idn = ""
+        try:
+            res.close()
+        except Exception:
+            pass
+    except Exception:
+        # If we cannot open here, fall back to trying each known class; the Base will error clearly.
+        idn = model_override.upper() if model_override else ""
+
+    def _select_class(idn_text: str):
+        t = idn_text.upper()
+        if any(k in t for k in ["34401A", "HEWLETT-PACKARD", "AGILENT", "HP,34401A", "HP 34401A"]):
+            return HP34401A
+        if "KEITHLEY" in t and "2000" in t:
+            return Keithley2000
+        if "KEITHLEY" in t and "2110" in t:
+            return Keithley2110
+        if ("TEKTRONIX" in t and ("DMM4050" in t or "DMM 4050" in t)) or "4050" in t:
+            return TektronixDMM4050
+        # If a literal override name was given, map it too
+        if t == "HP34401A":
+            return HP34401A
+        if t == "KEITHLEY2000":
+            return Keithley2000
+        if t == "KEITHLEY2110":
+            return Keithley2110
+        if t == "TEKTRONIXDMM4050":
+            return TektronixDMM4050
+        raise NotImplementedError(f"Unsupported or unknown multimeter model for IDN='{idn_text}'.")
+
+    cls = _select_class(idn)
+    return cls(instrument_address, nickname=nickname, identify=identify, timeout=timeout)

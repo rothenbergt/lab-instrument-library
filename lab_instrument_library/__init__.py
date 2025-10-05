@@ -34,7 +34,7 @@ __version__ = '0.1.0'
 from .base import LibraryTemplate
 
 # Import instrument classes
-from .multimeter import MultimeterBase, HP34401A, Keithley2000, Keithley2110, TektronixDMM4050
+from .multimeter import Multimeter, MultimeterBase, HP34401A, Keithley2000, Keithley2110, TektronixDMM4050
 from .supply import Supply
 from .smu import KeysightB2902A
 from .oscilloscope import Oscilloscope

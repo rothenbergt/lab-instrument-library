@@ -22,7 +22,7 @@ def main():
     print(f"DC Voltage: {voltage:.6f} V")
     
     # Read the AC voltage
-    voltage_ac = multimeter.read_voltage_AC()
+    voltage_ac = multimeter.read_voltage_ac()
     print(f"AC Voltage: {voltage_ac:.6f} V")
     
     # Measure the resistance

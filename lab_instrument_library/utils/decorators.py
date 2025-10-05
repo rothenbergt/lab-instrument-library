@@ -98,7 +98,6 @@ def visa_exception_handler(
                     error_msg = (f"Could not convert returned value from {instrument_id} "
                                f"at {address} in method {func.__name__}: {str(ex)}")
                     log.error(error_msg)
-                    print(error_msg)
                     
                     # For value errors, don't retry as they're likely to persist
                     return default_return_value
@@ -107,7 +106,6 @@ def visa_exception_handler(
                     # Type errors (wrong parameter types)
                     error_msg = f"Type error in {func.__name__}: {str(ex)}"
                     log.error(error_msg)
-                    print(f"Wrong parameter type: {str(ex)}")
                     
                     # For type errors, don't retry as they're likely to persist
                     return default_return_value
@@ -128,8 +126,6 @@ def visa_exception_handler(
                     else:
                         log.error(error_msg)
                         
-                    print(f"VISA exception: {ex.abbreviation}{friendly_msg}")
-                    
                     # Only retry certain VISA errors that might be transient
                     retriable_errors = ["VI_ERROR_TMO", "VI_ERROR_CONN_LOST", "VI_ERROR_RSRC_BUSY"]
                     can_retry = any(code in ex.abbreviation for code in retriable_errors)
@@ -147,7 +143,6 @@ def visa_exception_handler(
                                 f"{type(ex).__name__}: {str(ex)}{tb}")
                     
                     log.error(error_msg)
-                    print(f"Unexpected error: {type(ex).__name__}: {str(ex)}")
                     
                     # For unexpected errors, attempt retry if configured
                     if attempt < max_attempts - 1:

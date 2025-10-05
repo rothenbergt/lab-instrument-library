@@ -84,17 +84,14 @@ class LibraryTemplate(ABC):
             display_name = self.instrumentID if identify and self.instrumentID else \
                           (self.nickname if self.nickname else instrument_address)
             logger.info(f"Connected to {instrument_address}: {display_name}")
-            print(f"Successfully connected to {display_name} at {instrument_address}")
             return True
                 
         except pyvisa.errors.VisaIOError as e:
             error_message = self._get_visa_error_message(e, instrument_address)
             logger.error(error_message)
-            print(error_message)
             return False
         except Exception as e:
             logger.error(f"Failed to connect to {instrument_address}: {str(e)}")
-            print(f"Connection error: {str(e)}")
             return False
     
     def _identify_instrument(self) -> bool:
@@ -107,12 +104,10 @@ class LibraryTemplate(ABC):
             self.identify()
             if not self.instrumentID:
                 logger.warning(f"Connected to {self.instrument_address} but couldn't identify instrument")
-                print(f"Warning: Connected to {self.instrument_address} but couldn't identify instrument")
                 return False
             return True
         except Exception as e:
             logger.warning(f"Connected to {self.instrument_address} but identification failed: {str(e)}")
-            print(f"Warning: Identification failed: {str(e)}")
             return False
     
     def _get_visa_error_message(self, error: pyvisa.errors.VisaIOError, address: str) -> str:
