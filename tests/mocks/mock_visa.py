@@ -58,6 +58,11 @@ class MockResource:
         self.beep_enabled = True
         self.ranges: Dict[str, float] = {"VOLT": 10.0, "VOLT:AC": 10.0, "CURR": 1.0, "CURR:AC": 1.0, "RES": 10000.0, "FRES": 10000.0}
         self.autorange: Dict[str, bool] = {k: True for k in self.ranges.keys()}
+        self.nplc: Dict[str, float] = {k: 1.0 for k in self.ranges.keys()}
+        self.filter_enabled = False
+        self.filter_type = "MOV"
+        self.filter_count = 10
+        self.secondary_function: Optional[str] = None
 
     def _norm(self, cmd: str) -> str:
         return (cmd or "").strip()
@@ -127,6 +132,39 @@ class MockResource:
         if u.startswith(":TRIG:SOUR ") or u.startswith("TRIG:SOUR "):
             self.trigger_source = u.split(" ", 1)[1].strip()
             return
+        if ":NPLC " in u:
+            # Handle both VOLT:NPLC and SENS:VOLT:DC:NPLC patterns
+            try:
+                # SENS path
+                if u.startswith("SENS:"):
+                    sens_part = u.split("SENS:", 1)[1]
+                    before, _ = sens_part.split(":NPLC", 1)
+                    # Map e.g., VOLT:DC -> VOLT
+                    m = before.strip()
+                    m = m.replace("VOLT:DC", "VOLT").replace("CURR:DC", "CURR")
+                    func = _canonical_func(m)
+                else:
+                    func = u.split(":NPLC", 1)[0].strip(": ")
+                    func = _canonical_func(func)
+                value_str = u.split(":NPLC", 1)[1].strip()
+                if " " in value_str:
+                    value_str = value_str.split(" ", 1)[1]
+                self.nplc[func] = float(value_str)
+            except Exception:
+                pass
+            return
+        if u.startswith(":SENS:AVER:TCON ") or u.startswith("SENS:AVER:TCON "):
+            self.filter_type = u.split(" ", 1)[1].strip()
+            return
+        if u.startswith(":SENS:AVER:COUN ") or u.startswith("SENS:AVER:COUN "):
+            try:
+                self.filter_count = int(u.split(" ", 1)[1].strip())
+            except Exception:
+                pass
+            return
+        if u.startswith(":SENS:AVER ") or u.startswith("SENS:AVER "):
+            self.filter_enabled = u.endswith("ON")
+            return
         if u.startswith(":TRIG:COUN ") or u.startswith("TRIG:COUN "):
             try:
                 self.trigger_count = int(u.split(" ", 1)[1].strip())
@@ -152,6 +190,12 @@ class MockResource:
             return
         if u.startswith(":DISP:WIND2:STAT ") or u.startswith("DISP:WIND2:STAT "):
             self.dual_display_enabled = u.endswith("ON")
+            return
+        if u.startswith(":SENS:FUNC2 ") or u.startswith("SENS:FUNC2 "):
+            # Expect quotes
+            raw = command.split(" ", 1)[1].strip()
+            token = raw.strip().strip('"')
+            self.secondary_function = _canonical_func(token)
             return
         if u.startswith(":SYST:BEEP:STAT ") or u.startswith("SYST:BEEP:STAT "):
             self.beep_enabled = u.endswith("ON")
@@ -206,9 +250,30 @@ class MockResource:
             func = u.split(":RANG:AUTO?", 1)[0].strip(": ")
             enabled = self.autorange.get(_canonical_func(func), True)
             return "1" if enabled else "0"
+        # NPLC query
+        if u.endswith(":NPLC?"):
+            if u.startswith("SENS:"):
+                sens_part = u.split("SENS:", 1)[1]
+                before = sens_part.split(":NPLC?", 1)[0]
+                m = before.strip()
+                m = m.replace("VOLT:DC", "VOLT").replace("CURR:DC", "CURR")
+                func = _canonical_func(m)
+            else:
+                func = _canonical_func(u.split(":NPLC?", 1)[0].strip(": "))
+            return f"{self.nplc.get(func, 1.0)}"
         # Model-specific odds and ends that tests might poke
         if u == ":DISP:TEXT?" or u == "DISP:TEXT?":
             return f'"{self.display_text}"'
+        if u == ":SENS:AVER?" or u == "SENS:AVER?":
+            return "1" if self.filter_enabled else "0"
+        if u == ":SENS:AVER:COUN?" or u == "SENS:AVER:COUN?":
+            return f"{self.filter_count}"
+        if u == ":SENS:AVER:TCON?" or u == "SENS:AVER:TCON?":
+            return self.filter_type
+        if u == ":SENS:DATA2?" or u == "SENS:DATA2?":
+            token = self.secondary_function or "VOLT"
+            value = self._compute_reading(token, increment=False)
+            return f"{value}"
         # Finally, allow explicit canned responses for anything not modeled above
         if command in self.responses:
             return str(self.responses[command])

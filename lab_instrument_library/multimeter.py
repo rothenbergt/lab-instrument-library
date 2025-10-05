@@ -244,6 +244,49 @@ class MultimeterBase(LibraryTemplate, ABC):
         self.write("INIT")
         return True
     
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def configure(self, function: Optional[str] = None,
+                  range_value: Optional[float] = None,
+                  autorange: Optional[bool] = None,
+                  nplc: Optional[float] = None) -> Optional[str]:
+        """Convenience configuration: set function, range/autorange, and NPLC.
+        
+        Args:
+            function: Function to select.
+            range_value: Range to set for the selected function.
+            autorange: Enable/disable autorange for the selected function.
+            nplc: Integration time in power line cycles.
+        Returns:
+            The currently selected function after configuration, if available.
+        """
+        if function is not None:
+            self.set_function(function)
+        current = self.get_function()
+        if range_value is not None:
+            self.set_range(current, range_value)
+        if autorange is not None:
+            self.set_auto_range(current, autorange)
+        if nplc is not None:
+            self.set_nplc(nplc)
+        return current
+    
+    @parameter_validator(nplc=lambda n: n > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_nplc(self, nplc: float) -> None:
+        """Set integration time (NPLC) for the current function (generic SCPI)."""
+        current_function = self.get_function()
+        self.write(f"{current_function}:NPLC {nplc}")
+    
+    @visa_exception_handler(default_return_value=1.0, module_logger=logger)
+    def get_nplc(self) -> float:
+        """Get integration time (NPLC) for the current function (generic SCPI)."""
+        current_function = self.get_function()
+        response = self.query(f"{current_function}:NPLC?")
+        try:
+            return float(response.strip())
+        except Exception:
+            return 1.0
+    
     # Convenience methods for common measurements
     
     # Measure wrappers (configure + trigger + return)
@@ -554,7 +597,7 @@ class HP34401A(MultimeterBase):
     @parameter_validator(nplc=lambda n: 0.02 <= n <= 100)
     @visa_exception_handler(default_return_value=None, module_logger=logger)
     def set_integration_time(self, nplc: float) -> None:
-        """Set the integration time for measurements.
+        """Set the integration time for measurements (alias of set_nplc).
         
         Args:
             nplc: Number of power line cycles (0.02 to 100)
@@ -563,12 +606,9 @@ class HP34401A(MultimeterBase):
         Raises:
             ValueError: If NPLC is out of range
         """
-        # Get the current function
-        current_function = self.get_function()
-        
-        # Set integration time for current function
-        self.write(f"{current_function}:NPLC {nplc}")
-        logger.debug(f"Set integration time to {nplc} NPLC for {current_function}")
+        # Delegate to the generic NPLC setter to avoid duplicated logic
+        self.set_nplc(nplc)
+        logger.debug(f"Set integration time to {nplc} NPLC")
         
     @parameter_validator(
         samples=lambda s: 1 <= s <= 512,
@@ -682,6 +722,42 @@ class Keithley2000(MultimeterBase):
         self.write(f"TEMP:TC:TYPE {thermocouple_type}")
         logger.debug(f"Set thermocouple type to {thermocouple_type}")
     
+    @parameter_validator(nplc=lambda n: n > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_nplc(self, nplc: float) -> None:
+        """Set NPLC using Keithley SENS path for current function."""
+        fn = self.get_function()
+        # Map canonical to Keithley SENS path
+        mapping = {
+            "VOLT": "VOLT:DC",
+            "VOLT:AC": "VOLT:AC",
+            "CURR": "CURR:DC",
+            "CURR:AC": "CURR:AC",
+            "RES": "RES",
+            "FRES": "FRES",
+        }
+        path = mapping.get(fn, "VOLT:DC")
+        self.write(f"SENS:{path}:NPLC {nplc}")
+    
+    @visa_exception_handler(default_return_value=1.0, module_logger=logger)
+    def get_nplc(self) -> float:
+        """Get NPLC using Keithley SENS path for current function."""
+        fn = self.get_function()
+        mapping = {
+            "VOLT": "VOLT:DC",
+            "VOLT:AC": "VOLT:AC",
+            "CURR": "CURR:DC",
+            "CURR:AC": "CURR:AC",
+            "RES": "RES",
+            "FRES": "FRES",
+        }
+        path = mapping.get(fn, "VOLT:DC")
+        resp = self.query(f"SENS:{path}:NPLC?")
+        try:
+            return float(resp.strip())
+        except Exception:
+            return 1.0
+    
     @visa_exception_handler(default_return_value="K", module_logger=logger)
     def get_thermocouple_type(self) -> str:
         """Get the current thermocouple type setting.
@@ -788,6 +864,41 @@ class Keithley2110(MultimeterBase):
             
         self.write(f"UNIT:TEMP {std_unit}")
         logger.debug(f"Set temperature unit to {std_unit}")
+    
+    @parameter_validator(nplc=lambda n: n > 0)
+    @visa_exception_handler(default_return_value=None, module_logger=logger)
+    def set_nplc(self, nplc: float) -> None:
+        """Set NPLC using Keithley SENS path for current function."""
+        fn = self.get_function()
+        mapping = {
+            "VOLT": "VOLT:DC",
+            "VOLT:AC": "VOLT:AC",
+            "CURR": "CURR:DC",
+            "CURR:AC": "CURR:AC",
+            "RES": "RES",
+            "FRES": "FRES",
+        }
+        path = mapping.get(fn, "VOLT:DC")
+        self.write(f"SENS:{path}:NPLC {nplc}")
+    
+    @visa_exception_handler(default_return_value=1.0, module_logger=logger)
+    def get_nplc(self) -> float:
+        """Get NPLC using Keithley SENS path for current function."""
+        fn = self.get_function()
+        mapping = {
+            "VOLT": "VOLT:DC",
+            "VOLT:AC": "VOLT:AC",
+            "CURR": "CURR:DC",
+            "CURR:AC": "CURR:AC",
+            "RES": "RES",
+            "FRES": "FRES",
+        }
+        path = mapping.get(fn, "VOLT:DC")
+        resp = self.query(f"SENS:{path}:NPLC?")
+        try:
+            return float(resp.strip())
+        except Exception:
+            return 1.0
 
 
 class TektronixDMM4050(MultimeterBase):
