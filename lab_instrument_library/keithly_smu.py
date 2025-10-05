@@ -4,6 +4,14 @@ Python library containing general functions to control Keithley SMUs.
 This module provides functions for controlling Keithley 228 and 238 Source Measure Units.
 These instruments are commonly used for precision sourcing and measurement of voltage
 and current in semiconductor testing and characterization applications.
+
+Supported devices:
+- Keithley 228 Voltage/Current Source
+- Keithley 238 High Current Source Measure Unit
+
+Documentation references:
+- Keithley 236/237/238 Operator's Manual: https://cores.research.asu.edu/sites/default/files/2021-04/Keithley%20237%20Operations%20Manual_0.pdf
+- Keithley 228 Manual (Tektronix): https://www.tek.com/en/manual/keithley-model-228-voltage-current-source-instruction-manual-rev-c
 """
 
 from .base import LibraryTemplate

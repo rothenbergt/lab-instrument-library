@@ -141,6 +141,13 @@ class PowerSupplyBase(ABC):
             except Exception:
                 logger.error("Could not determine output state")
                 return False
+
+    # Optional convenience methods (default implementations may be overridden)
+    def set_output_state(self, state: bool, channel: Optional[int] = None) -> None:
+        if state:
+            self.enable_output(channel)
+        else:
+            self.disable_output(channel)
     
     def reset(self) -> None:
         """Reset the instrument to default settings."""
@@ -249,6 +256,32 @@ class AgilentE3631A(PowerSupplyBase):
         except Exception as e:
             logger.error(f"Error measuring current: {str(e)}")
             return 0.0
+
+    def set_current_limit(self, current_limit: float, channel: int = 1) -> None:
+        """Set current limit on the selected output."""
+        try:
+            if channel not in self._channel_map:
+                logger.error(f"Invalid channel {channel} for {self.device_name}")
+                return
+            output = self._channel_map[channel]
+            self.connection.write(f"INST:SEL {output}")
+            self.connection.write(f"CURR {current_limit:.4f}")
+        except Exception as e:
+            logger.error(f"Error setting current limit: {str(e)}")
+
+    def get_current_limit(self, channel: int = 1) -> float:
+        """Get current limit on the selected output."""
+        try:
+            if channel not in self._channel_map:
+                logger.error(f"Invalid channel {channel} for {self.device_name}")
+                return 0.0
+            output = self._channel_map[channel]
+            self.connection.write(f"INST:SEL {output}")
+            response = self.connection.query("CURR?").strip()
+            return float(response)
+        except Exception as e:
+            logger.error(f"Error getting current limit: {str(e)}")
+            return 0.0
     
     def enable_output(self, channel: Optional[int] = None) -> None:
         """Enable the output.
@@ -355,6 +388,22 @@ class AgilentE3632A(PowerSupplyBase):
         except Exception as e:
             logger.error(f"Error measuring current: {str(e)}")
             return 0.0
+
+    def set_current_limit(self, current_limit: float, channel: int = 1) -> None:
+        """Set current limit for this single-output model."""
+        try:
+            self.connection.write(f"CURR {current_limit:.4f}")
+        except Exception as e:
+            logger.error(f"Error setting current limit: {str(e)}")
+
+    def get_current_limit(self, channel: int = 1) -> float:
+        """Get current limit for this single-output model."""
+        try:
+            response = self.connection.query("CURR?").strip()
+            return float(response)
+        except Exception as e:
+            logger.error(f"Error getting current limit: {str(e)}")
+            return 0.0
     
     def enable_output(self, channel: Optional[int] = None) -> None:
         """Enable the output.
@@ -458,6 +507,24 @@ class KeysightE3649A(PowerSupplyBase):
             return float(response)
         except Exception as e:
             logger.error(f"Error measuring current: {str(e)}")
+            return 0.0
+
+    def set_current_limit(self, current_limit: float, channel: int = 1) -> None:
+        """Set current limit on the selected output."""
+        try:
+            self.connection.write(f"INST:SEL OUT{channel}")
+            self.connection.write(f"CURR {current_limit:.4f}")
+        except Exception as e:
+            logger.error(f"Error setting current limit: {str(e)}")
+
+    def get_current_limit(self, channel: int = 1) -> float:
+        """Get current limit on the selected output."""
+        try:
+            self.connection.write(f"INST:SEL OUT{channel}")
+            response = self.connection.query("CURR?").strip()
+            return float(response)
+        except Exception as e:
+            logger.error(f"Error getting current limit: {str(e)}")
             return 0.0
     
     def enable_output(self, channel: Optional[int] = None) -> None:
@@ -565,6 +632,59 @@ class KeysightE36300(PowerSupplyBase):
         except Exception as e:
             logger.error(f"Error measuring current: {str(e)}")
             return 0.0
+
+    def set_current_limit(self, current_limit: float, channel: int = 1) -> None:
+        """Set current limit for a channel."""
+        try:
+            self.connection.write(f"CURR {current_limit:.4f}, (@{channel})")
+        except Exception as e:
+            logger.error(f"Error setting current limit: {str(e)}")
+
+    def get_current_limit(self, channel: int = 1) -> float:
+        """Get current limit for a channel."""
+        try:
+            response = self.connection.query(f"CURR? (@{channel})").strip()
+            return float(response)
+        except Exception as e:
+            logger.error(f"Error getting current limit: {str(e)}")
+            return 0.0
+
+    # Optional protection controls for E36300 series
+    def enable_ovp(self, state: bool, channel: int = 1) -> None:
+        try:
+            self.connection.write(f"VOLT:PROT:STAT {'ON' if state else 'OFF'}, (@{channel})")
+        except Exception as e:
+            logger.error(f"Error setting OVP state: {str(e)}")
+
+    def set_ovp_level(self, level: float, channel: int = 1) -> None:
+        try:
+            self.connection.write(f"VOLT:PROT:LEV {level:.3f}, (@{channel})")
+        except Exception as e:
+            logger.error(f"Error setting OVP level: {str(e)}")
+
+    def clear_ovp(self, channel: int = 1) -> None:
+        try:
+            self.connection.write(f"VOLT:PROT:CLE (@{channel})")
+        except Exception as e:
+            logger.error(f"Error clearing OVP: {str(e)}")
+
+    def enable_ocp(self, state: bool, channel: int = 1) -> None:
+        try:
+            self.connection.write(f"CURR:PROT:STAT {'ON' if state else 'OFF'}, (@{channel})")
+        except Exception as e:
+            logger.error(f"Error setting OCP state: {str(e)}")
+
+    def set_ocp_level(self, level: float, channel: int = 1) -> None:
+        try:
+            self.connection.write(f"CURR:PROT:LEV {level:.3f}, (@{channel})")
+        except Exception as e:
+            logger.error(f"Error setting OCP level: {str(e)}")
+
+    def clear_ocp(self, channel: int = 1) -> None:
+        try:
+            self.connection.write(f"CURR:PROT:CLE (@{channel})")
+        except Exception as e:
+            logger.error(f"Error clearing OCP: {str(e)}")
     
     def enable_output(self, channel: Optional[int] = None) -> None:
         """Enable the output.
@@ -680,22 +800,8 @@ class Supply(LibraryTemplate):
                     logger.info(f"Detected {model} from identification")
                     return model
             
-        # If we can't determine the model, ask the user
-        print("Please select your power supply model:")
-        for key, value in self.lab_supplies.items():
-            print(f"{key}: {value}")
-            
-        try:
-            choice = input("Choice: ")
-            if choice in self.lab_supplies:
-                model = self.lab_supplies[choice]
-                logger.info(f"User selected {model}")
-                return model
-        except Exception:
-            pass
-            
-        # Default to E3632A as a reasonable fallback
-        logger.warning("Could not determine model, using E3632A as default")
+        # If we can't determine the model, fall back without prompting interactively
+        logger.warning("Could not determine supply model from IDN; defaulting to E3632A. Pass selected_instrument to override.")
         return "E3632A"
     
     # Forward methods to the controller
@@ -803,6 +909,26 @@ class Supply(LibraryTemplate):
         """Convenience method to set both voltage and current in one call."""
         self.set_voltage(voltage, current, channel)
 
+    def set_current_limit(self, current: float, channel: int = 1) -> None:
+        """Set only the current limit for a channel."""
+        # Delegate where available
+        if hasattr(self.supply, 'set_current_limit'):
+            self.supply.set_current_limit(current, channel)  # type: ignore
+        else:
+            # Fallback: set voltage to existing setting and update current
+            v = self.get_voltage(channel)
+            self.set_voltage(v, current, channel)
+
+    def get_current_limit(self, channel: int = 1) -> float:
+        """Get current limit for a channel if supported."""
+        if hasattr(self.supply, 'get_current_limit'):
+            return self.supply.get_current_limit(channel)  # type: ignore
+        return 0.0
+
+    def set_output_state(self, state: bool, channel: Optional[int] = None) -> None:
+        """Enable or disable output."""
+        self.supply.set_output_state(state, channel)
+
     def get_all_measurements(self, channel: int = 1) -> Dict[str, float]:
         """Get all measurements for a channel.
         
@@ -839,13 +965,13 @@ class Supply(LibraryTemplate):
         
         # Calculate voltage steps
         voltages = np.linspace(start, stop, steps)
-        results = []
+        results: List[Dict[str, float]] = []
         
         # Enable output
         self.enable_output(channel)
         
         try:
-            print(f"Sweeping voltage from {start}V to {stop}V in {steps} steps")
+            logger.info(f"Sweeping voltage from {start}V to {stop}V in {steps} steps")
             
             for i, voltage in enumerate(voltages):
                 self.set_voltage(voltage, current_limit, channel)
@@ -857,9 +983,9 @@ class Supply(LibraryTemplate):
                 
                 # Store results
                 result = {
-                    'set_voltage': voltage,
-                    'measured_voltage': measured_v,
-                    'measured_current': measured_i
+                    'set_voltage': float(voltage),
+                    'measured_voltage': float(measured_v),
+                    'measured_current': float(measured_i)
                 }
                 results.append(result)
                 
@@ -867,14 +993,13 @@ class Supply(LibraryTemplate):
                 if callback:
                     callback(measured_v, measured_i, i)
                 
-                print(f"\rStep {i+1}/{steps}: {measured_v:.3f}V, {measured_i*1000:.3f}mA", end="")
-                
-            print("\nSweep complete")
+                logger.debug(f"Step {i+1}/{steps}: {measured_v:.3f}V, {measured_i*1000:.3f}mA")
+            
+            logger.info("Sweep complete")
             return results
             
         except Exception as e:
             logger.error(f"Error during voltage sweep: {str(e)}")
-            print(f"\nError during voltage sweep: {str(e)}")
             return results
         finally:
             # Safety: return to a safe voltage

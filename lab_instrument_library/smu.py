@@ -6,8 +6,10 @@ to perform precision voltage/current sourcing and measurement.
 
 Supported devices:
 - Keysight B2902A
-- Keithley 2400 Series (via SMU class)
-- Rohde & Schwarz NGU Series (via SMU class)
+
+Documentation references:
+- Keysight B2902A Programming Guide: https://assets.testequity.com/te1/Documents/pdf/B2900A-prog.pdf
+- Keysight B2902A User Guide: https://assets.testequity.com/te1/Documents/pdf/B2900A-ug.pdf
 """
 
 from abc import ABC, abstractmethod
