@@ -117,6 +117,9 @@ from lab_instrument_library import Multimeter
 # Connect using the generic Multimeter factory (auto-detects the model using *IDN?)
 multimeter = Multimeter("GPIB0::15::INSTR")
 
+# Quick configuration helper (function, range, autorange, NPLC)
+multimeter.configure(function="VOLT", range_value=10.0, autorange=False, nplc=10)
+
 # Read voltage measurement (triggers and returns using current configuration)
 voltage = multimeter.read_voltage()
 print(f"Measured voltage: {voltage} V")
@@ -144,25 +147,25 @@ multimeter.close()
 ### Power Supply
 
 ```python
-from lab_instrument_library.supply import KeysightE36xx
+from lab_instrument_library import Supply
 
-# Connect to a power supply
-supply = KeysightE36xx("GPIB0::5::INSTR")
+# Connect using the Supply factory; specify model if auto-detect is ambiguous
+ps = Supply("GPIB0::26::INSTR", selected_instrument="E36313A")
 
-# Set voltage and current limit
-supply.set_voltage(3.3, 0.5)  # 3.3V with 0.5A current limit
+# Set voltage and current limit on channel 1
+ps.set_voltage(3.3, 0.5, channel=1)
 
-# Enable the output
-supply.enable_output()
+# Enable the output on channel 1
+ps.enable_output(channel=1)
 
 # Measure the actual output
-voltage = supply.measure_voltage()
-current = supply.measure_current()
+voltage = ps.measure_voltage(channel=1)
+current = ps.measure_current(channel=1)
 print(f"Output: {voltage:.3f}V, {current:.3f}A")
 
 # Disable the output before disconnecting
-supply.disable_output()
-supply.close()
+ps.disable_output(channel=1)
+ps.close()
 ```
 
 ### Oscilloscope

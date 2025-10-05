@@ -63,6 +63,11 @@ class MockResource:
         self.filter_type = "MOV"
         self.filter_count = 10
         self.secondary_function: Optional[str] = None
+        # Supply-related state
+        self.supply_set_voltage: Dict[int, float] = {}
+        self.supply_set_current: Dict[int, float] = {}
+        self.supply_output_state: Dict[int, bool] = {}
+        self.supply_selected_output: int = 1
 
     def _norm(self, cmd: str) -> str:
         return (cmd or "").strip()
@@ -131,6 +136,61 @@ class MockResource:
             return
         if u.startswith(":TRIG:SOUR ") or u.startswith("TRIG:SOUR "):
             self.trigger_source = u.split(" ", 1)[1].strip()
+            return
+        # Power supply: select output by name (e.g., OUT1)
+        if u.startswith(":INST:SEL ") or u.startswith("INST:SEL "):
+            target = u.split(" ", 1)[1].strip()
+            if target.startswith("OUT"):
+                try:
+                    self.supply_selected_output = int(target[3:])
+                except Exception:
+                    pass
+            return
+        # Power supply: set voltage/current with channel list syntax
+        if u.startswith("VOLT ") or u.startswith(":VOLT "):
+            # e.g., VOLT 3.3000, (@1)
+            parts = command.split(",", 1)
+            try:
+                value = float(parts[0].split()[1])
+            except Exception:
+                value = 0.0
+            if len(parts) > 1 and "(@" in parts[1]:
+                chans = parts[1]
+                chan_nums = [int(x.strip()) for x in chans[chans.find("(@")+2:chans.find(")")].split(",")]
+                for ch in chan_nums:
+                    self.supply_set_voltage[ch] = value
+            else:
+                ch = self.supply_selected_output
+                self.supply_set_voltage[ch] = value
+            return
+        if u.startswith("CURR ") or u.startswith(":CURR "):
+            parts = command.split(",", 1)
+            try:
+                value = float(parts[0].split()[1])
+            except Exception:
+                value = 0.0
+            if len(parts) > 1 and "(@" in parts[1]:
+                chans = parts[1]
+                chan_nums = [int(x.strip()) for x in chans[chans.find("(@")+2:chans.find(")")].split(",")]
+                for ch in chan_nums:
+                    self.supply_set_current[ch] = value
+            else:
+                ch = self.supply_selected_output
+                self.supply_set_current[ch] = value
+            return
+        # Power supply: output ON/OFF with optional channel list
+        if u.startswith("OUTP ") or u.startswith(":OUTP "):
+            state = u.split()[1].strip(",")
+            on = state == "ON"
+            if "(@" in u:
+                chans_part = u[u.find("(@")+2:u.find(")")]
+                chan_nums = [int(x.strip()) for x in chans_part.split(",")]
+                for ch in chan_nums:
+                    self.supply_output_state[ch] = on
+            else:
+                # Apply to a default set of channels 1..3
+                for ch in [1, 2, 3]:
+                    self.supply_output_state[ch] = on
             return
         if ":NPLC " in u:
             # Handle both VOLT:NPLC and SENS:VOLT:DC:NPLC patterns
@@ -246,6 +306,29 @@ class MockResource:
             func = u.split(":RANG?", 1)[0].strip(": ")
             value = self.ranges.get(_canonical_func(func), 0.0)
             return f"{value}"
+        # Power supply queries
+        if u.startswith("VOLT? (@") or u.startswith(":VOLT? (@"):
+            ch = int(u[u.find("(@")+2:u.find(")")])
+            val = self.supply_set_voltage.get(ch, 0.0)
+            return f"{val}"
+        if u == "VOLT?" or u == ":VOLT?":
+            val = self.supply_set_voltage.get(self.supply_selected_output, 0.0)
+            return f"{val}"
+        if u.startswith("MEAS:VOLT? (@") or u.startswith(":MEAS:VOLT? (@"):
+            ch = int(u[u.find("(@")+2:u.find(")")])
+            base = self.supply_set_voltage.get(ch, 0.0)
+            val = base + 0.001 * ch
+            return f"{val}"
+        if u.startswith("MEAS:CURR? (@") or u.startswith(":MEAS:CURR? (@"):
+            ch = int(u[u.find("(@")+2:u.find(")")])
+            limit = self.supply_set_current.get(ch, 0.1)
+            # Return a stable sub-limit value
+            val = min(limit, 0.251)
+            return f"{val}"
+        if u.startswith("OUTP? (@") or u.startswith(":OUTP? (@"):
+            ch = int(u[u.find("(@")+2:u.find(")")])
+            state = self.supply_output_state.get(ch, False)
+            return "1" if state else "0"
         if ":RANG:AUTO?" in u:
             func = u.split(":RANG:AUTO?", 1)[0].strip(": ")
             enabled = self.autorange.get(_canonical_func(func), True)
