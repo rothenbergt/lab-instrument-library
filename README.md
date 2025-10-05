@@ -3,6 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/rothenbergt/lab-instrument-library/actions/workflows/ci.yml/badge.svg)](https://github.com/rothenbergt/lab-instrument-library/actions)
+[![codecov](https://codecov.io/gh/rothenbergt/lab-instrument-library/branch/main/graph/badge.svg)](https://codecov.io/gh/rothenbergt/lab-instrument-library)
 
 A Python library for interfacing with laboratory instruments through GPIB/VISA connections. Control multimeters, oscilloscopes, power supplies, SMUs, and more with a unified, Pythonic API.
 
