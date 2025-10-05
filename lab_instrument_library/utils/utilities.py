@@ -10,7 +10,11 @@ import os
 import time
 import logging
 import re
-import PySimpleGUI as sg
+# PySimpleGUI may not be available in headless CI; import lazily/optionally
+try:
+    import PySimpleGUI as sg  # type: ignore
+except Exception:  # pragma: no cover - only in headless CI
+    sg = None  # fallback; get_directory will handle gracefully
 from typing import List, Union, Optional, Tuple, Dict, Any
 
 # Setup module logger
@@ -109,16 +113,19 @@ def save_recent_directory(directory: str) -> None:
 
 def get_directory() -> Optional[str]:
     """Display a GUI for selecting a directory.
-    
-    Shows a GUI dialog that allows the user to browse for a directory or
-    select from recently used directories.
-    
+
+    In headless environments (e.g., CI), returns None if PySimpleGUI is unavailable.
+
     Returns:
-        Selected directory path or None if canceled.
+        Selected directory path or None if canceled/unavailable.
     """
+    if sg is None:
+        logger.info("PySimpleGUI not available; get_directory returning None (headless environment)")
+        return None
+
     current_dir = os.getcwd()
-    recent_dirs = []
-    
+    recent_dirs: List[str] = []
+
     # Try to load recent directories
     try:
         recent_file = os.path.join(current_dir, "recentDirectories.txt")
@@ -143,30 +150,30 @@ def get_directory() -> Optional[str]:
     ]
 
     window = sg.Window('Select Directory', layout, finalize=True)
-    
+
     # Event loop
     while True:
         event, values = window.read()
-        
+
         if event in (sg.WIN_CLOSED, "Cancel"):
             window.close()
             return None
-            
+
         if event == "-LIST-" and values["-LIST-"]:
             # Update the input field with the selected directory
             window["-INPUT-"].update(values["-LIST-"][0])
-            
+
         if event == "OK":
             selected_dir = values["-INPUT-"] or (values["-LIST-"][0] if values["-LIST-"] else "")
-            
+
             if not selected_dir:
                 sg.popup("Please select a directory", title="No Directory Selected")
                 continue
-                
+
             if not os.path.isdir(selected_dir):
                 sg.popup(f"'{selected_dir}' is not a valid directory", title="Invalid Directory")
                 continue
-                
+
             window.close()
             # Save this directory for future use
             save_recent_directory(selected_dir)
