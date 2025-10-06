@@ -41,6 +41,8 @@ dev = [
     "pytest-mock>=3.10.0",
     "pytest-xdist>=3.3.0",
     "flake8>=6.0.0",
+    "pre-commit>=3.6.0",
+    "ruff>=0.5.0",
 ]
 
 [project.urls]
@@ -63,3 +65,18 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests that require physical hardware",
 ]
+
+[tool.ruff]
+line-length = 120
+# Align with our runtime
+target-version = "py311"
+
+[tool.ruff.lint]
+# Basic errors, flakes, and import sorting
+select = ["E", "F", "I"]
+# Don't enforce long-line violations yet
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+indent-style = "space"

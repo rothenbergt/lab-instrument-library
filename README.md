@@ -228,6 +228,21 @@ pytest --cov=lab_instrument_library --cov-report=html
 pytest tests/test_multimeter_factory.py -v
 ```
 
+### Git hooks and linting
+
+This repo includes a pre-commit configuration using Ruff (lint + format).
+
+Enable it locally:
+
+```bash
+pip install -e .[dev]
+pre-commit install
+# Run on all files once
+pre-commit run --all-files
+```
+
+Ruff configuration lives in `pyproject.toml`. The hook auto-fixes where possible.
+
 ### Project Structure
 
 ```
