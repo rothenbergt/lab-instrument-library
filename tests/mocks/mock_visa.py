@@ -7,24 +7,39 @@ physical instruments connected. This version is stateful and tries to
 emulate common SCPI for multimeters so tests are more realistic.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def _canonical_func(token: str) -> str:
     t = (token or "").strip().upper()
     synonyms = {
         # DC Voltage
-        "VOLT": "VOLT", "VOLT:DC": "VOLT", "VDC": "VOLT", "DCV": "VOLT",
+        "VOLT": "VOLT",
+        "VOLT:DC": "VOLT",
+        "VDC": "VOLT",
+        "DCV": "VOLT",
         # AC Voltage
-        "VOLT:AC": "VOLT:AC", "VAC": "VOLT:AC", "ACV": "VOLT:AC",
+        "VOLT:AC": "VOLT:AC",
+        "VAC": "VOLT:AC",
+        "ACV": "VOLT:AC",
         # DC Current
-        "CURR": "CURR", "CURR:DC": "CURR", "IDC": "CURR", "DCI": "CURR",
+        "CURR": "CURR",
+        "CURR:DC": "CURR",
+        "IDC": "CURR",
+        "DCI": "CURR",
         # AC Current
-        "CURR:AC": "CURR:AC", "IAC": "CURR:AC", "ACI": "CURR:AC",
+        "CURR:AC": "CURR:AC",
+        "IAC": "CURR:AC",
+        "ACI": "CURR:AC",
         # Resistance
-        "RES": "RES", "OHM": "RES", "OHMS": "RES",
+        "RES": "RES",
+        "OHM": "RES",
+        "OHMS": "RES",
         # 4-wire Resistance
-        "FRES": "FRES", "4W": "FRES", "4WIRE": "FRES", "4-WIRE": "FRES",
+        "FRES": "FRES",
+        "4W": "FRES",
+        "4WIRE": "FRES",
+        "4-WIRE": "FRES",
     }
     return synonyms.get(t, t)
 
@@ -56,7 +71,14 @@ class MockResource:
         self.display_text = ""
         self.dual_display_enabled = False
         self.beep_enabled = True
-        self.ranges: Dict[str, float] = {"VOLT": 10.0, "VOLT:AC": 10.0, "CURR": 1.0, "CURR:AC": 1.0, "RES": 10000.0, "FRES": 10000.0}
+        self.ranges: Dict[str, float] = {
+            "VOLT": 10.0,
+            "VOLT:AC": 10.0,
+            "CURR": 1.0,
+            "CURR:AC": 1.0,
+            "RES": 10000.0,
+            "FRES": 10000.0,
+        }
         self.autorange: Dict[str, bool] = {k: True for k in self.ranges.keys()}
         self.nplc: Dict[str, float] = {k: 1.0 for k in self.ranges.keys()}
         self.filter_enabled = False
@@ -156,7 +178,7 @@ class MockResource:
                 value = 0.0
             if len(parts) > 1 and "(@" in parts[1]:
                 chans = parts[1]
-                chan_nums = [int(x.strip()) for x in chans[chans.find("(@")+2:chans.find(")")].split(",")]
+                chan_nums = [int(x.strip()) for x in chans[chans.find("(@") + 2 : chans.find(")")].split(",")]
                 for ch in chan_nums:
                     self.supply_set_voltage[ch] = value
             else:
@@ -171,7 +193,7 @@ class MockResource:
                 value = 0.0
             if len(parts) > 1 and "(@" in parts[1]:
                 chans = parts[1]
-                chan_nums = [int(x.strip()) for x in chans[chans.find("(@")+2:chans.find(")")].split(",")]
+                chan_nums = [int(x.strip()) for x in chans[chans.find("(@") + 2 : chans.find(")")].split(",")]
                 for ch in chan_nums:
                     self.supply_set_current[ch] = value
             else:
@@ -183,7 +205,7 @@ class MockResource:
             state = u.split()[1].strip(",")
             on = state == "ON"
             if "(@" in u:
-                chans_part = u[u.find("(@")+2:u.find(")")]
+                chans_part = u[u.find("(@") + 2 : u.find(")")]
                 chan_nums = [int(x.strip()) for x in chans_part.split(",")]
                 for ch in chan_nums:
                     self.supply_output_state[ch] = on
@@ -308,25 +330,25 @@ class MockResource:
             return f"{value}"
         # Power supply queries
         if u.startswith("VOLT? (@") or u.startswith(":VOLT? (@"):
-            ch = int(u[u.find("(@")+2:u.find(")")])
+            ch = int(u[u.find("(@") + 2 : u.find(")")])
             val = self.supply_set_voltage.get(ch, 0.0)
             return f"{val}"
         if u == "VOLT?" or u == ":VOLT?":
             val = self.supply_set_voltage.get(self.supply_selected_output, 0.0)
             return f"{val}"
         if u.startswith("MEAS:VOLT? (@") or u.startswith(":MEAS:VOLT? (@"):
-            ch = int(u[u.find("(@")+2:u.find(")")])
+            ch = int(u[u.find("(@") + 2 : u.find(")")])
             base = self.supply_set_voltage.get(ch, 0.0)
             val = base + 0.001 * ch
             return f"{val}"
         if u.startswith("MEAS:CURR? (@") or u.startswith(":MEAS:CURR? (@"):
-            ch = int(u[u.find("(@")+2:u.find(")")])
+            ch = int(u[u.find("(@") + 2 : u.find(")")])
             limit = self.supply_set_current.get(ch, 0.1)
             # Return a stable sub-limit value
             val = min(limit, 0.251)
             return f"{val}"
         if u.startswith("OUTP? (@") or u.startswith(":OUTP? (@"):
-            ch = int(u[u.find("(@")+2:u.find(")")])
+            ch = int(u[u.find("(@") + 2 : u.find(")")])
             state = self.supply_output_state.get(ch, False)
             return "1" if state else "0"
         if ":RANG:AUTO?" in u:
@@ -372,7 +394,9 @@ class MockResource:
         response = self.read()
         return response.encode("utf-8")
 
-    def query_binary_values(self, command: str, datatype: str = "f", is_big_endian: bool = True, container: Any = list) -> List[Any]:
+    def query_binary_values(
+        self, command: str, datatype: str = "f", is_big_endian: bool = True, container: Any = list
+    ) -> List[Any]:
         self.write(command)
         return container([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 

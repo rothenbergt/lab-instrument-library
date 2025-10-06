@@ -8,13 +8,13 @@ import re
 import pytest
 
 from lab_instrument_library.utils.utilities import (
-    parse_numeric,
-    stringToInt,
-    stringToFloat,
-    is_valid_ip,
-    format_bytes,
     create_run_folder,
+    format_bytes,
+    is_valid_ip,
+    parse_numeric,
     scan_gpib_devices,
+    stringToFloat,
+    stringToInt,
 )
 
 

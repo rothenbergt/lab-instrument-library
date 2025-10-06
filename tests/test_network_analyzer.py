@@ -2,8 +2,6 @@
 Tests for network analyzer helpers and data retrieval.
 """
 
-import pytest
-
 
 def test_network_analyzer_helpers_and_trace(mock_network_analyzer):
     vna = mock_network_analyzer

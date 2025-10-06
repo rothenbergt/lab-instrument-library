@@ -4,6 +4,7 @@ Factory tests for the generic Multimeter entry point.
 
 import pytest
 
+
 @pytest.mark.parametrize(
     "idn, expected_class_name",
     [
@@ -13,7 +14,6 @@ import pytest
         ("TEKTRONIX,DMM4050,12345,1.0", "TektronixDMM4050"),
     ],
 )
-
 def test_multimeter_factory_detects_models(mock_visa, idn, expected_class_name):
     from lab_instrument_library import Multimeter
     from tests.mocks.mock_visa import MockResource

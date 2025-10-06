@@ -8,9 +8,12 @@ and temperature unit settings.
 
 import pytest
 
+
 def test_keithley2110_exists():
     import lab_instrument_library
+
     assert hasattr(lab_instrument_library, "Keithley2110")
+
 
 def test_keithley2110_init_and_basic_measurements(mock_visa):
     from lab_instrument_library import Keithley2110
@@ -35,6 +38,7 @@ def test_keithley2110_init_and_basic_measurements(mock_visa):
     assert isinstance(i, float)
     assert isinstance(r, float)
 
+
 def test_keithley2110_filter(mock_visa):
     from lab_instrument_library import Keithley2110
     from tests.mocks.mock_visa import MockResource
@@ -57,6 +61,7 @@ def test_keithley2110_filter(mock_visa):
     dmm.set_filter(state=False, type="REP", count=5)
     assert any("SENS:AVER OFF" in cmd for cmd in mock_resource.command_log)
 
+
 def test_keithley2110_thermocouple(mock_visa):
     from lab_instrument_library import Keithley2110
     from tests.mocks.mock_visa import MockResource
@@ -75,6 +80,7 @@ def test_keithley2110_thermocouple(mock_visa):
     # Test getting thermocouple type
     tc_type = dmm.get_thermocouple_type()
     assert tc_type == "K"  # From mock response
+
 
 def test_keithley2110_temperature_unit(mock_visa):
     from lab_instrument_library import Keithley2110
@@ -102,6 +108,7 @@ def test_keithley2110_temperature_unit(mock_visa):
     mock_resource.command_log.clear()
     dmm.set_temperature_unit("K")
     assert any("UNIT:TEMP K" in cmd for cmd in mock_resource.command_log)
+
 
 def test_keithley2110_nplc(mock_visa):
     from lab_instrument_library import Keithley2110
@@ -131,6 +138,7 @@ def test_keithley2110_nplc(mock_visa):
     # Test getting NPLC reflects the set value in our stateful mock
     nplc = dmm.get_nplc()
     assert nplc == 5.0
+
 
 def test_keithley2110_validation(mock_visa):
     from lab_instrument_library import Keithley2110

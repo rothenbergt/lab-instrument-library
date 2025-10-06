@@ -7,18 +7,17 @@ It supports multiple log levels and customizable formatting.
 """
 
 import os
-import sys
 from datetime import datetime
-import logging
-from typing import Optional, Union, Any, TextIO, Dict, List
+from typing import Any, Optional, TextIO
+
 
 class Logger:
     """Logger class for instrument operations and experiments.
-    
+
     This class provides methods to log messages with timestamps to both
     the console and a file, with support for different log levels and
     customizable formatting.
-    
+
     Attributes:
         directory (str): Directory where log files are stored.
         log_file (str): Name of the log file.
@@ -32,20 +31,20 @@ class Logger:
     WARNING = 1
     ERROR = 2
     DEBUG = 3
-    
-    # Level names for display
-    _LEVEL_NAMES = {
-        INFO: "INFO",
-        WARNING: "WARNING",
-        ERROR: "ERROR",
-        DEBUG: "DEBUG"
-    }
 
-    def __init__(self, directory: str = ".", log_file: str = "log.txt", 
-                log_level: int = INFO, console_output: bool = True,
-                timestamp_format: str = "%Y-%m-%d %H:%M:%S"):
+    # Level names for display
+    _LEVEL_NAMES = {INFO: "INFO", WARNING: "WARNING", ERROR: "ERROR", DEBUG: "DEBUG"}
+
+    def __init__(
+        self,
+        directory: str = ".",
+        log_file: str = "log.txt",
+        log_level: int = INFO,
+        console_output: bool = True,
+        timestamp_format: str = "%Y-%m-%d %H:%M:%S",
+    ):
         """Initialize a new Logger.
-        
+
         Args:
             directory: Directory where log files will be stored.
             log_file: Name of the log file.
@@ -58,11 +57,11 @@ class Logger:
         self.log_level = log_level
         self.console_output = console_output
         self.timestamp_format = timestamp_format
-        
+
         # Ensure directory has a trailing slash
         if not self.directory.endswith('/') and not self.directory.endswith('\\'):
             self.directory += os.path.sep
-            
+
         # Ensure directory exists
         if not os.path.exists(self.directory):
             try:
@@ -76,10 +75,10 @@ class Logger:
 
     def _get_log_file(self, mode: str = "a") -> Optional[TextIO]:
         """Get a file handle for the log file.
-        
+
         Args:
             mode: File open mode ('a' for append, 'w' for write).
-            
+
         Returns:
             File handle or None if file couldn't be opened.
         """
@@ -90,7 +89,7 @@ class Logger:
             if self.console_output:
                 print(f"Warning: Could not open log file: {str(e)}")
             return None
-    
+
     def _log_header(self) -> None:
         """Write a header to the log file."""
         f = self._get_log_file(mode='a')
@@ -105,7 +104,7 @@ class Logger:
 
     def print(self, message: Any, level: int = INFO) -> None:
         """Log a message to both console and file.
-        
+
         Args:
             message: The message to log.
             level: Log level for this message (0=INFO, 1=WARNING, 2=ERROR, 3=DEBUG).
@@ -113,19 +112,19 @@ class Logger:
         # Skip if message level is higher than the current log level
         if level > self.log_level:
             return
-            
+
         # Get current timestamp
         timestamp = datetime.now().strftime(self.timestamp_format)
-        
+
         # Determine log level prefix
         level_name = self._LEVEL_NAMES.get(level, "INFO")
-            
+
         # Format message
         if isinstance(message, str):
             formatted_message = f"{timestamp} [{level_name}] {message}"
         else:
             formatted_message = f"{timestamp} [{level_name}] {str(message)}"
-            
+
         # Print to console if enabled
         if self.console_output:
             if level == self.ERROR:
@@ -136,7 +135,7 @@ class Logger:
                 print(f"\033[94m{formatted_message}\033[0m")  # Blue text for debug
             else:
                 print(formatted_message)
-            
+
         # Write to file
         f = self._get_log_file()
         if f:
@@ -147,39 +146,39 @@ class Logger:
 
     def info(self, message: Any) -> None:
         """Log an informational message.
-        
+
         Args:
             message: The message to log.
         """
         self.print(message, self.INFO)
-        
+
     def warning(self, message: Any) -> None:
         """Log a warning message.
-        
+
         Args:
             message: The message to log.
         """
         self.print(message, self.WARNING)
-        
+
     def error(self, message: Any) -> None:
         """Log an error message.
-        
+
         Args:
             message: The message to log.
         """
         self.print(message, self.ERROR)
-        
+
     def debug(self, message: Any) -> None:
         """Log a debug message.
-        
+
         Args:
             message: The message to log.
         """
         self.print(message, self.DEBUG)
-        
+
     def separator(self, char: str = '-', length: int = 80) -> None:
         """Log a separator line.
-        
+
         Args:
             char: Character to use for the separator.
             length: Length of the separator line.
@@ -199,10 +198,10 @@ class Logger:
                 f.close()
         elif self.console_output:
             print("There is no log to clear.")
-            
+
     def set_level(self, level: int) -> None:
         """Set the current logging level.
-        
+
         Args:
             level: New logging level (0=INFO, 1=WARNING, 2=ERROR, 3=DEBUG).
         """
@@ -212,21 +211,21 @@ class Logger:
         else:
             self.warning(f"Invalid log level: {level}. Using INFO level.")
             self.log_level = self.INFO
-            
+
     def get_level_name(self) -> str:
         """Get the name of the current logging level.
-        
+
         Returns:
             str: The name of the current logging level.
         """
         return self._LEVEL_NAMES.get(self.log_level, "UNKNOWN")
-        
+
     def export_log(self, destination: str) -> bool:
         """Export the log file to another location.
-        
+
         Args:
             destination: Path to export the log file to.
-            
+
         Returns:
             bool: True if export succeeded, False otherwise.
         """
@@ -235,10 +234,9 @@ class Logger:
             if self.console_output:
                 print(f"Log file {source_path} does not exist")
             return False
-            
+
         try:
-            with open(source_path, 'r', encoding='utf-8') as source, \
-                 open(destination, 'w', encoding='utf-8') as dest:
+            with open(source_path, 'r', encoding='utf-8') as source, open(destination, 'w', encoding='utf-8') as dest:
                 dest.write(source.read())
             if self.console_output:
                 print(f"Log exported to {destination}")

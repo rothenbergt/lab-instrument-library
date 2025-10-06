@@ -2,8 +2,6 @@
 Tests for Agilent E3632A and Keysight E3649A supplies.
 """
 
-import pytest
-
 
 def test_e3632a_set_voltage_and_output(mock_visa):
     from lab_instrument_library import Supply

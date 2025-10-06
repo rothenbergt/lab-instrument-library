@@ -6,21 +6,21 @@ lab instrument library for tasks like logging, directory management,
 instrument discovery, and data type conversion.
 """
 
+from .decorators import visa_exception_handler
 from .logger import Logger
 from .utilities import (
-    create_run_folder,
-    get_directory,
     countdown,
-    getAllLiveUnits,
-    scan_gpib_devices,
-    stringToInt,
-    stringToFloat,
-    parse_numeric,
-    is_valid_ip,
+    create_run_folder,
     format_bytes,
-    save_recent_directory
+    get_directory,
+    getAllLiveUnits,
+    is_valid_ip,
+    parse_numeric,
+    save_recent_directory,
+    scan_gpib_devices,
+    stringToFloat,
+    stringToInt,
 )
-from .decorators import visa_exception_handler
 
 __all__ = [
     'Logger',
@@ -35,5 +35,5 @@ __all__ = [
     'is_valid_ip',
     'format_bytes',
     'save_recent_directory',
-    'visa_exception_handler'
+    'visa_exception_handler',
 ]

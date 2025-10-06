@@ -5,30 +5,27 @@ This module provides fixtures for mocking PyVISA resources and
 creating instrument instances for testing without physical hardware.
 """
 
-import pytest
-import sys
 import os
-from unittest.mock import patch, MagicMock
+import sys
+from unittest.mock import patch
+
+import pytest
 
 # Add parent directory to path to import the library
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import our mock VISA implementation
-from tests.mocks.mock_visa import MockResourceManager, MockResource
+from tests.mocks.mock_visa import MockResource, MockResourceManager
 from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
 # Import the library modules (adjust paths as needed)
-# We use try/except to handle potential import errors gracefully
-try:
-    import lab_instrument_library
-except ImportError:
-    print("Warning: lab_instrument_library package not found. Tests may fail.")
+# Note: we avoid importing the package eagerly here to keep tests isolated from import-time side effects.
 
 
 @pytest.fixture
 def mock_visa():
     """Fixture to provide a mock PyVISA implementation.
-    
+
     Returns:
         A mock ResourceManager object with standard responses.
     """
@@ -38,16 +35,14 @@ def mock_visa():
         "*RST": "",
         "*CLS": "",
         "*OPC?": "1",
-        "SYST:ERR?": "0,No error"
+        "SYST:ERR?": "0,No error",
     }
-    
+
     mock_resource = MockResource("GPIB0::22::INSTR", standard_responses)
-    
+
     # Create a mock resource manager that returns our mock resource
-    mock_manager = MockResourceManager({
-        "GPIB0::22::INSTR": mock_resource
-    })
-    
+    mock_manager = MockResourceManager({"GPIB0::22::INSTR": mock_resource})
+
     # Patch the pyvisa.ResourceManager to return our mock
     with patch('pyvisa.ResourceManager', return_value=mock_manager):
         yield mock_manager
@@ -56,42 +51,47 @@ def mock_visa():
 @pytest.fixture
 def mock_multimeter(mock_visa, model="HP34401A"):
     """Fixture to provide a mock multimeter.
-    
+
     Args:
         mock_visa: The mock VISA resource manager
         model: The multimeter model to mock ('HP34401A', 'KEITHLEY2000', 'KEITHLEY2110', or 'TEKTRONIXDMM4050')
-    
+
     Returns:
         A multimeter instance connected to a mock resource.
     """
     # Get responses for the specified model
     responses = MULTIMETER_RESPONSES.get(model, MULTIMETER_RESPONSES["GENERIC"])
-    
+
     # Create a mock resource with multimeter responses
     mock_resource = MockResource("GPIB0::22::INSTR", responses)
-    
+
     # Update the mock manager to use our multimeter resource
     mock_visa.resources["GPIB0::22::INSTR"] = mock_resource
-    
+
     # Import specific multimeter classes
     try:
         if model == "HP34401A":
             from lab_instrument_library import HP34401A
+
             multimeter = HP34401A("GPIB0::22::INSTR")
         elif model == "KEITHLEY2000":
             from lab_instrument_library import Keithley2000
+
             multimeter = Keithley2000("GPIB0::22::INSTR")
         elif model == "KEITHLEY2110":
             from lab_instrument_library import Keithley2110
+
             multimeter = Keithley2110("GPIB0::22::INSTR")
         elif model == "TEKTRONIXDMM4050":
             from lab_instrument_library import TektronixDMM4050
+
             multimeter = TektronixDMM4050("GPIB0::22::INSTR")
         else:
             # Default to HP34401A if model not specified or recognized
             from lab_instrument_library import HP34401A
+
             multimeter = HP34401A("GPIB0::22::INSTR")
-        
+
         return multimeter
     except ImportError as e:
         pytest.skip(f"Multimeter class {model} not available: {str(e)}")
@@ -100,10 +100,10 @@ def mock_multimeter(mock_visa, model="HP34401A"):
 @pytest.fixture
 def mock_oscilloscope(mock_visa):
     """Fixture to provide a mock oscilloscope.
-    
+
     Args:
         mock_visa: The mock VISA resource manager
-    
+
     Returns:
         An Oscilloscope instance connected to a mock resource.
     """
@@ -127,17 +127,17 @@ def mock_oscilloscope(mock_visa):
         "TRIGger:A:LEVel?": "0.0",
         "ACQuire:MODe?": "SAMPLE",
     }
-    
+
     # Create a mock resource with oscilloscope responses
     mock_resource = MockResource("GPIB0::23::INSTR", oscilloscope_responses)
-    
+
     # Update the mock manager to use our oscilloscope resource
     mock_visa.resources["GPIB0::23::INSTR"] = mock_resource
-    
+
     # Import the oscilloscope class
     try:
         from lab_instrument_library import Oscilloscope
-        
+
         # Create an oscilloscope instance that uses our mock
         oscilloscope = Oscilloscope("GPIB0::23::INSTR")
         return oscilloscope
@@ -148,10 +148,10 @@ def mock_oscilloscope(mock_visa):
 @pytest.fixture
 def mock_function_generator(mock_visa):
     """Fixture to provide a mock function generator.
-    
+
     Args:
         mock_visa: The mock VISA resource manager
-    
+
     Returns:
         An AFG3000 instance connected to a mock resource.
     """
@@ -165,17 +165,17 @@ def mock_function_generator(mock_visa):
         "OUTPut1:STATe?": "OFF",
         "OUTPut2:STATe?": "OFF",
     }
-    
+
     # Create a mock resource with function generator responses
     mock_resource = MockResource("GPIB0::24::INSTR", fg_responses)
-    
+
     # Update the mock manager to use our function generator resource
     mock_visa.resources["GPIB0::24::INSTR"] = mock_resource
-    
+
     # Import the function generator class
     try:
         from lab_instrument_library import AFG3000
-        
+
         # Create a function generator instance that uses our mock
         fg = AFG3000("GPIB0::24::INSTR")
         return fg
@@ -186,10 +186,10 @@ def mock_function_generator(mock_visa):
 @pytest.fixture
 def mock_smu(mock_visa):
     """Fixture to provide a mock source measure unit.
-    
+
     Args:
         mock_visa: The mock VISA resource manager
-    
+
     Returns:
         An SMU instance connected to a mock resource.
     """
@@ -205,17 +205,17 @@ def mock_smu(mock_visa):
         "MEAS:VOLT? (@1)": "0.9998",
         "MEAS:CURR? (@1)": "0.0997",
     }
-    
+
     # Create a mock resource with SMU responses
     mock_resource = MockResource("GPIB0::25::INSTR", smu_responses)
-    
+
     # Update the mock manager to use our SMU resource
     mock_visa.resources["GPIB0::25::INSTR"] = mock_resource
-    
+
     # Import the SMU class
     try:
         from lab_instrument_library import SMU
-        
+
         # Create an SMU instance that uses our mock
         smu = SMU("GPIB0::25::INSTR")
         return smu
@@ -226,10 +226,10 @@ def mock_smu(mock_visa):
 @pytest.fixture
 def mock_power_supply(mock_visa):
     """Fixture to provide a mock power supply.
-    
+
     Args:
         mock_visa: The mock VISA resource manager
-    
+
     Returns:
         A Supply instance connected to a mock resource.
     """
@@ -246,17 +246,17 @@ def mock_power_supply(mock_visa):
         "MEAS:CURR? (@1)": "0.251",
         "OUTP? (@1)": "1",
     }
-    
+
     # Create a mock resource with power supply responses
     mock_resource = MockResource("GPIB0::26::INSTR", ps_responses)
-    
+
     # Update the mock manager to use our power supply resource
     mock_visa.resources["GPIB0::26::INSTR"] = mock_resource
-    
+
     # Import the Supply class
     try:
         from lab_instrument_library import Supply
-        
+
         # Create a Supply instance that uses our mock
         supply = Supply("GPIB0::26::INSTR")
         return supply
@@ -267,7 +267,7 @@ def mock_power_supply(mock_visa):
 @pytest.fixture
 def mock_network_analyzer(mock_visa):
     """Fixture to provide a mock network analyzer.
-    
+
     Returns a NetworkAnalyzer instance connected to a mock resource with canned responses.
     """
     # Basic frequency and trace data
@@ -279,7 +279,7 @@ def mock_network_analyzer(mock_visa):
         # Frequency axis (3 points)
         "SENS:X:VAL?": "1.0,2.0,3.0",
         # FDAT: interleaved real, imag
-        "CALC:DATA:FDAT?": "0.0,0.0, -10.0,0.0, -20.0,0.0"
+        "CALC:DATA:FDAT?": "0.0,0.0, -10.0,0.0, -20.0,0.0",
     }
 
     mock_resource = MockResource("GPIB0::27::INSTR", vna_responses)
@@ -287,6 +287,7 @@ def mock_network_analyzer(mock_visa):
 
     try:
         from lab_instrument_library import NetworkAnalyzer
+
         vna = NetworkAnalyzer("GPIB0::27::INSTR")
         return vna
     except ImportError:

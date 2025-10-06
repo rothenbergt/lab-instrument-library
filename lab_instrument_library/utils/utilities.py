@@ -5,17 +5,19 @@ This module contains various utility functions used throughout the library for t
 like directory management, instrument discovery, data type conversion, and user interfaces.
 """
 
-import pyvisa
-import os
-import time
 import logging
+import os
 import re
+import time
+
+import pyvisa
+
 # PySimpleGUI may not be available in headless CI; import lazily/optionally
 try:
     import PySimpleGUI as sg  # type: ignore
 except Exception:  # pragma: no cover - only in headless CI
     sg = None  # fallback; get_directory will handle gracefully
-from typing import List, Union, Optional, Tuple, Dict, Any
+from typing import Dict, List, Optional, Union
 
 # Setup module logger
 logger = logging.getLogger(__name__)
@@ -23,50 +25,50 @@ logger = logging.getLogger(__name__)
 
 def create_run_folder(base_path: str) -> str:
     """Create a new run folder with incrementing number.
-    
+
     Creates a standardized folder structure for a new test run. This function
     finds the highest numbered existing run folder and creates the next one
     with subdirectories for data and pictures.
-    
+
     Args:
         base_path: Base directory path where run folders will be created.
-        
+
     Returns:
         Path to the newly created run folder with trailing slash.
-        
+
     Raises:
         OSError: If directory creation fails.
     """
     # Ensure base_path exists
     os.makedirs(base_path, exist_ok=True)
-    
+
     try:
         # Extract run numbers from existing folders
         max_num = 0
         run_pattern = re.compile(r'run(\d+)$')
-        
+
         for item in os.listdir(base_path):
             if os.path.isdir(os.path.join(base_path, item)):
                 match = run_pattern.match(item)
                 if match:
                     num = int(match.group(1))
                     max_num = max(max_num, num)
-        
+
         # Create new run folder and its subdirectories
         new_run_num = max_num + 1
         run_dir = os.path.join(base_path, f"run{new_run_num}")
-        
+
         logger.info(f"Creating run folder {new_run_num}")
-        
+
         # Create the directory structure
         os.makedirs(run_dir, exist_ok=True)
         os.makedirs(os.path.join(run_dir, "data"), exist_ok=True)
         os.makedirs(os.path.join(run_dir, "pictures"), exist_ok=True)
-        
+
         # Ensure trailing slash for returned path
         run_path = os.path.join(run_dir, "")
         return run_path
-        
+
     except OSError as e:
         logger.error(f"Error creating run folders: {str(e)}")
         # Create a fallback directory structure
@@ -79,28 +81,28 @@ def create_run_folder(base_path: str) -> str:
 
 def save_recent_directory(directory: str) -> None:
     """Save a directory path to the recent directories file.
-    
+
     Args:
         directory: Directory path to save.
     """
     try:
         current_dir = os.getcwd()
         recent_file = os.path.join(current_dir, "recentDirectories.txt")
-        
+
         # Read existing entries
         recent_dirs = []
         if os.path.exists(recent_file):
             with open(recent_file, 'r') as f:
                 recent_dirs = [line.strip() for line in f.readlines()]
-        
+
         # Add new directory if not already in list
         if directory not in recent_dirs:
             recent_dirs.append(directory)
-            
+
             # Keep only the 10 most recent directories
             if len(recent_dirs) > 10:
                 recent_dirs = recent_dirs[-10:]
-                
+
             # Write back to file
             with open(recent_file, 'w') as f:
                 for dir_path in recent_dirs:
@@ -139,12 +141,18 @@ def get_directory() -> Optional[str]:
     # Create the layout for the directory selection dialog
     layout = [
         [sg.Text("Recent Directories:", visible=bool(recent_dirs))],
-        [sg.Listbox(values=recent_dirs, size=(70, min(5, len(recent_dirs))), 
-                   key="-LIST-", enable_events=True, visible=bool(recent_dirs))],
+        [
+            sg.Listbox(
+                values=recent_dirs,
+                size=(70, min(5, len(recent_dirs))),
+                key="-LIST-",
+                enable_events=True,
+                visible=bool(recent_dirs),
+            )
+        ],
         [sg.Text("Choose a folder to save your data:")],
-        [sg.InputText(key="-INPUT-", size=(60, 1)), 
-         sg.FolderBrowse(key="-BROWSE-")],
-        [sg.Button("OK", bind_return_key=True), sg.Button("Cancel")]
+        [sg.InputText(key="-INPUT-", size=(60, 1)), sg.FolderBrowse(key="-BROWSE-")],
+        [sg.Button("OK", bind_return_key=True), sg.Button("Cancel")],
     ]
 
     window = sg.Window('Select Directory', layout, finalize=True)
@@ -183,10 +191,10 @@ def get_directory() -> Optional[str]:
 
 def countdown(seconds: int, message: str = "Time remaining") -> None:
     """Display a countdown timer in the console.
-    
+
     Shows a countdown timer with optional message, updating in-place
     on the console. Allows early termination with Ctrl+C.
-    
+
     Args:
         seconds: Number of seconds to count down from.
         message: Optional message to display with the countdown.
@@ -195,17 +203,17 @@ def countdown(seconds: int, message: str = "Time remaining") -> None:
         for remaining in range(seconds, 0, -1):
             mins, secs = divmod(remaining, 60)
             hours, mins = divmod(mins, 60)
-            
+
             if hours > 0:
                 time_format = f"{hours:02d}:{mins:02d}:{secs:02d}"
             else:
                 time_format = f"{mins:02d}:{secs:02d}"
-                
+
             print(f"\r{message}: {time_format} (Ctrl+C to end early)", end="")
             time.sleep(1)
-            
+
         print("\rCountdown complete!                            ")
-        
+
     except KeyboardInterrupt:
         print("\rCountdown terminated by user                   ")
 
@@ -260,9 +268,9 @@ def scan_gpib_devices(start: int = 0, end: int = 32, timeout: int = 1000, verbos
 
 def getAllLiveUnits() -> Dict[int, str]:
     """Find all live GPIB instruments.
-    
+
     Legacy wrapper for scan_gpib_devices().
-    
+
     Returns:
         Dictionary mapping GPIB addresses to instrument identification strings.
     """
@@ -271,28 +279,28 @@ def getAllLiveUnits() -> Dict[int, str]:
 
 def parse_numeric(string: str) -> Union[int, float]:
     """Extract and parse a numeric value from a string.
-    
+
     This function extracts numeric characters (and decimal points)
     from a string and attempts to parse them as either an integer
     or a float.
-    
+
     Args:
         string: String containing numeric values.
-        
+
     Returns:
         int or float: The parsed numeric value.
-        
+
     Raises:
         ValueError: If no numeric value could be extracted.
     """
     # Extract digits and decimal points
     numeric_chars = [c for c in string if c.isdigit() or c == '.']
-    
+
     if not numeric_chars:
         raise ValueError(f"No numeric value found in string: '{string}'")
-        
+
     number_str = ''.join(numeric_chars)
-    
+
     # Try to convert to numeric value
     try:
         # If there's a decimal point, return as float
@@ -306,10 +314,10 @@ def parse_numeric(string: str) -> Union[int, float]:
 
 def stringToInt(string: str) -> int:
     """Extract and convert numeric characters from a string to an integer.
-    
+
     Args:
         string: String containing numbers.
-        
+
     Returns:
         int: The extracted integer value.
     """
@@ -323,10 +331,10 @@ def stringToInt(string: str) -> int:
 
 def stringToFloat(string: str) -> float:
     """Extract and convert numeric characters from a string to a float.
-    
+
     Args:
         string: String containing numbers.
-        
+
     Returns:
         float: The extracted float value.
     """
@@ -340,25 +348,23 @@ def stringToFloat(string: str) -> float:
 
 def is_valid_ip(ip_address: str) -> bool:
     """Check if a string is a valid IP address.
-    
+
     Args:
         ip_address: String to check.
-        
+
     Returns:
         bool: True if the string is a valid IP address, False otherwise.
     """
-    pattern = re.compile(
-        r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
-    )
+    pattern = re.compile(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
     return bool(pattern.match(ip_address))
 
 
 def format_bytes(bytes: int) -> str:
     """Format byte count into human-readable string.
-    
+
     Args:
         bytes: Number of bytes.
-        
+
     Returns:
         Human-readable string representation (e.g., "1.23 MB").
     """

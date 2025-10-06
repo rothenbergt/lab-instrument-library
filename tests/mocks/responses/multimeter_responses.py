@@ -15,13 +15,11 @@ GENERIC_MULTIMETER_RESPONSES: Dict[str, str] = {
     "*CLS": "",
     "*OPC?": "1",
     "SYST:ERR?": "0,No error",
-    
     # Function setting
     ":CONF:VOLT?": "VOLT",
     ":CONF:CURR?": "CURR",
     ":CONF:RES?": "RES",
     "FUNC?": "\"VOLT:DC\"",
-    
     # Measurements
     "MEAS:VOLT?": "1.234",
     "MEAS:VOLT:DC?": "1.234",
@@ -33,7 +31,6 @@ GENERIC_MULTIMETER_RESPONSES: Dict[str, str] = {
     "MEAS:FRES?": "1000.57",
     "READ?": "1.234",
     "FETC?": "1.234",
-    
     # Range settings
     "VOLT:RANG?": "10.0",
     "CURR:RANG?": "1.0",
@@ -48,7 +45,6 @@ HP34401A_RESPONSES: Dict[str, str] = {
     # Update the generic responses with HP-specific ones
     **GENERIC_MULTIMETER_RESPONSES,
     "*IDN?": "HEWLETT-PACKARD,34401A,0,1.0-5.0",
-    
     # HP-specific commands
     "DISP:TEXT?": "\"TEST MESSAGE\"",
     "SYST:BEEP:STAT?": "0",
@@ -62,7 +58,6 @@ KEITHLEY2000_RESPONSES: Dict[str, str] = {
     # Update the generic responses with Keithley-specific ones
     **GENERIC_MULTIMETER_RESPONSES,
     "*IDN?": "KEITHLEY INSTRUMENTS,2000,1234567,1.0",
-
     # Keithley-specific commands
     ":INIT:CONT?": "0",
     ":SENS:AVER:TCON?": "MOV",
@@ -76,7 +71,6 @@ KEITHLEY2110_RESPONSES: Dict[str, str] = {
     # Update the generic responses with Keithley-specific ones
     **GENERIC_MULTIMETER_RESPONSES,
     "*IDN?": "KEITHLEY INSTRUMENTS,2110,1234567,1.0",
-
     # Keithley 2110-specific commands
     ":SENS:AVER:TCON?": "MOV",
     ":SENS:AVER:COUN?": "10",
@@ -90,7 +84,6 @@ TEKTRONIXDMM4050_RESPONSES: Dict[str, str] = {
     # Update the generic responses with Tektronix-specific ones
     **GENERIC_MULTIMETER_RESPONSES,
     "*IDN?": "TEKTRONIX,DMM4050,12345,1.0",
-
     # Tektronix-specific commands
     "DISP:WIND2:STAT?": "0",
     "SENS:FUNC2?": "\"CURR\"",

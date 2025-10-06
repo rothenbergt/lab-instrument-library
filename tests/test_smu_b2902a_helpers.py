@@ -2,8 +2,6 @@
 Tests for SMU helpers (Keysight B2902A).
 """
 
-import pytest
-
 
 def test_smu_configure_output_and_compliance(mock_visa):
     from lab_instrument_library import SMU

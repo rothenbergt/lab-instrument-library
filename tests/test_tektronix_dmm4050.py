@@ -8,9 +8,12 @@ temperature reference junction settings.
 
 import pytest
 
+
 def test_tektronix_dmm4050_exists():
     import lab_instrument_library
+
     assert hasattr(lab_instrument_library, "TektronixDMM4050")
+
 
 def test_tektronix_dmm4050_init_and_basic_measurements(mock_visa):
     from lab_instrument_library import TektronixDMM4050
@@ -31,6 +34,7 @@ def test_tektronix_dmm4050_init_and_basic_measurements(mock_visa):
     assert isinstance(v, float)
     assert isinstance(i, float)
     assert isinstance(r, float)
+
 
 def test_tektronix_dmm4050_dual_display(mock_visa):
     from lab_instrument_library import TektronixDMM4050
@@ -58,6 +62,7 @@ def test_tektronix_dmm4050_dual_display(mock_visa):
     dmm.disable_dual_display()
     assert any("DISP:WIND2:STAT OFF" in cmd for cmd in mock_resource.command_log)
 
+
 def test_tektronix_dmm4050_read_dual_display(mock_visa):
     from lab_instrument_library import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
@@ -78,6 +83,7 @@ def test_tektronix_dmm4050_read_dual_display(mock_visa):
     assert isinstance(secondary, float)
     assert primary > 0  # Should be voltage reading
     assert secondary > 0  # Should be current reading
+
 
 def test_tektronix_dmm4050_temperature_reference_junction(mock_visa):
     from lab_instrument_library import TektronixDMM4050
@@ -109,6 +115,7 @@ def test_tektronix_dmm4050_temperature_reference_junction(mock_visa):
     assert any("TEMP:TRAN:TC:RJUN:TYPE SIM" in cmd for cmd in mock_resource.command_log)
     assert any("TEMP:TRAN:TC:RJUN:SIM 25.0" in cmd for cmd in mock_resource.command_log)
 
+
 def test_tektronix_dmm4050_validation(mock_visa):
     from lab_instrument_library import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
@@ -123,6 +130,7 @@ def test_tektronix_dmm4050_validation(mock_visa):
     # Test invalid reference junction type
     with pytest.raises(ValueError):
         dmm.set_temperature_reference_junction("INVALID")
+
 
 def test_tektronix_dmm4050_range_and_autorange(mock_visa):
     from lab_instrument_library import TektronixDMM4050
@@ -144,6 +152,7 @@ def test_tektronix_dmm4050_range_and_autorange(mock_visa):
     dmm.set_auto_range("VOLT", False)
     auto_state = dmm.get_auto_range_state("VOLT")
     assert auto_state is False
+
 
 def test_tektronix_dmm4050_fetch_and_trigger(mock_visa):
     from lab_instrument_library import TektronixDMM4050

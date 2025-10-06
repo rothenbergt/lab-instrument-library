@@ -2,8 +2,6 @@
 Tests for Keysight E36300 series supply via Supply factory.
 """
 
-import pytest
-
 
 def test_e36300_basic_channel_control(mock_visa):
     from lab_instrument_library import Supply

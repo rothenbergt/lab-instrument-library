@@ -2,13 +2,10 @@
 Tests for oscilloscope helpers and configuration.
 """
 
-import pytest
-
 
 def test_oscilloscope_configure_channel_and_acquisition(mock_oscilloscope):
     scope = mock_oscilloscope
     # Access the underlying mock to inspect commands
-    from tests.mocks.mock_visa import MockResource
 
     # Configure CH1 in one call
     scope.configure_channel(

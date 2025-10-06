@@ -5,11 +5,12 @@ This module tests the functionality of the HP34401A multimeter class,
 including initialization, measurement functions, range settings, and configuration operations.
 """
 
-import pytest
 
 def test_hp34401a_exists():
     import lab_instrument_library
+
     assert hasattr(lab_instrument_library, "HP34401A")
+
 
 def test_hp34401a_init_and_basic_measurements(mock_visa):
     from lab_instrument_library import HP34401A
@@ -35,6 +36,7 @@ def test_hp34401a_init_and_basic_measurements(mock_visa):
     v_read = dmm.read_voltage()
     assert isinstance(v_read, float)
 
+
 def test_hp34401a_fetch_and_trigger(mock_visa):
     from lab_instrument_library import HP34401A
     from tests.mocks.mock_visa import MockResource
@@ -52,6 +54,7 @@ def test_hp34401a_fetch_and_trigger(mock_visa):
     fetched = dmm.fetch_voltage()
     assert isinstance(fetched, float)
 
+
 def test_hp34401a_range_and_autorange(mock_visa):
     from lab_instrument_library import HP34401A
     from tests.mocks.mock_visa import MockResource
@@ -68,6 +71,7 @@ def test_hp34401a_range_and_autorange(mock_visa):
 
     dmm.set_auto_range("VOLT", False)
     assert dmm.get_auto_range_state("VOLT") is False
+
 
 def test_hp34401a_display_text_and_clear(mock_visa):
     from lab_instrument_library import HP34401A
