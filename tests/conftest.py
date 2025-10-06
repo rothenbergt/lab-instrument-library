@@ -262,3 +262,32 @@ def mock_power_supply(mock_visa):
         return supply
     except ImportError:
         pytest.skip("lab_instrument_library.Supply not available")
+
+
+@pytest.fixture
+def mock_network_analyzer(mock_visa):
+    """Fixture to provide a mock network analyzer.
+    
+    Returns a NetworkAnalyzer instance connected to a mock resource with canned responses.
+    """
+    # Basic frequency and trace data
+    vna_responses = {
+        "*IDN?": "KEYSIGHT,E5061B,12345,1.0",
+        "*RST": "",
+        "*CLS": "",
+        "*OPC?": "1",
+        # Frequency axis (3 points)
+        "SENS:X:VAL?": "1.0,2.0,3.0",
+        # FDAT: interleaved real, imag
+        "CALC:DATA:FDAT?": "0.0,0.0, -10.0,0.0, -20.0,0.0"
+    }
+
+    mock_resource = MockResource("GPIB0::27::INSTR", vna_responses)
+    mock_visa.resources["GPIB0::27::INSTR"] = mock_resource
+
+    try:
+        from lab_instrument_library import NetworkAnalyzer
+        vna = NetworkAnalyzer("GPIB0::27::INSTR")
+        return vna
+    except ImportError:
+        pytest.skip("lab_instrument_library.NetworkAnalyzer not available")
