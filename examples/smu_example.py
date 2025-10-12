@@ -10,7 +10,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from lab_instrument_library.smu import KeysightB2902A
+from pylabinstruments.smu import KeysightB2902A
 
 
 def main():

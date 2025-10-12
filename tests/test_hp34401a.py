@@ -7,13 +7,13 @@ including initialization, measurement functions, range settings, and configurati
 
 
 def test_hp34401a_exists():
-    import lab_instrument_library
+    import pylabinstruments
 
-    assert hasattr(lab_instrument_library, "HP34401A")
+    assert hasattr(pylabinstruments, "HP34401A")
 
 
 def test_hp34401a_init_and_basic_measurements(mock_visa):
-    from lab_instrument_library import HP34401A
+    from pylabinstruments import HP34401A
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -38,7 +38,7 @@ def test_hp34401a_init_and_basic_measurements(mock_visa):
 
 
 def test_hp34401a_fetch_and_trigger(mock_visa):
-    from lab_instrument_library import HP34401A
+    from pylabinstruments import HP34401A
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -56,7 +56,7 @@ def test_hp34401a_fetch_and_trigger(mock_visa):
 
 
 def test_hp34401a_range_and_autorange(mock_visa):
-    from lab_instrument_library import HP34401A
+    from pylabinstruments import HP34401A
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -74,7 +74,7 @@ def test_hp34401a_range_and_autorange(mock_visa):
 
 
 def test_hp34401a_display_text_and_clear(mock_visa):
-    from lab_instrument_library import HP34401A
+    from pylabinstruments import HP34401A
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 

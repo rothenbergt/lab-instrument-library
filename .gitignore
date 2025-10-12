@@ -65,3 +65,4 @@ venv.bak/
 temp*.png
 *.csv
 Temp/
+nul

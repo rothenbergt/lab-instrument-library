@@ -2,8 +2,8 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/rothenbergt/lab-instrument-library/actions/workflows/ci.yml/badge.svg)](https://github.com/rothenbergt/lab-instrument-library/actions)
-[![codecov](https://codecov.io/gh/rothenbergt/lab-instrument-library/branch/main/graph/badge.svg)](https://codecov.io/gh/rothenbergt/lab-instrument-library)
+[![CI](https://github.com/rothenbergt/pylabinstruments/actions/workflows/ci.yml/badge.svg)](https://github.com/rothenbergt/pylabinstruments/actions)
+[![codecov](https://codecov.io/gh/rothenbergt/pylabinstruments/branch/main/graph/badge.svg)](https://codecov.io/gh/rothenbergt/pylabinstruments)
 
 A Python library for interfacing with laboratory instruments through GPIB/VISA connections. Control multimeters, oscilloscopes, power supplies, SMUs, and more with a unified, Pythonic API.
 
@@ -12,7 +12,7 @@ A Python library for interfacing with laboratory instruments through GPIB/VISA c
 ## Quick Start
 
 ```python
-from lab_instrument_library import Multimeter
+from pylabinstruments import Multimeter
 
 # Auto-detect and connect to any supported multimeter
 dmm = Multimeter("GPIB0::15::INSTR")
@@ -77,8 +77,8 @@ dmm.close()
 
 ```bash
 # Clone the repository
-git clone https://github.com/rothenbergt/lab-instrument-library.git
-cd lab-instrument-library
+git clone https://github.com/rothenbergt/pylabinstruments.git
+cd pylabinstruments
 
 # Install in development mode
 pip install -e .
@@ -100,7 +100,7 @@ pip install -e ".[dev]"
 ### Multimeter - Quick Measurements
 
 ```python
-from lab_instrument_library import Multimeter
+from pylabinstruments import Multimeter
 
 # Auto-detect instrument model
 dmm = Multimeter("GPIB0::15::INSTR")
@@ -120,7 +120,7 @@ dmm.close()
 ### Power Supply - Set and Measure
 
 ```python
-from lab_instrument_library import Supply
+from pylabinstruments import Supply
 
 ps = Supply("GPIB0::26::INSTR", selected_instrument="E36313A")
 
@@ -140,7 +140,7 @@ ps.close()
 ### SMU - IV Characterization
 
 ```python
-from lab_instrument_library.smu import KeysightB2902A
+from pylabinstruments.smu import KeysightB2902A
 
 smu = KeysightB2902A("USB0::0x0957::0xCE18::MY51141974::INSTR")
 
@@ -159,7 +159,7 @@ smu.close()
 ### Oscilloscope - Capture Waveform
 
 ```python
-from lab_instrument_library.oscilloscope import TektronixTDS2000
+from pylabinstruments.oscilloscope import TektronixTDS2000
 
 scope = TektronixTDS2000("GPIB0::7::INSTR")
 
@@ -180,7 +180,7 @@ scope.close()
 ### Temperature Control
 
 ```python
-from lab_instrument_library.thermonics import Thermonics
+from pylabinstruments.thermonics import Thermonics
 
 tc = Thermonics("GPIB0::21::INSTR", selected_instrument="Thermonics T-2500SE")
 
@@ -222,7 +222,7 @@ LibraryTemplate (base.py)
 pytest
 
 # Run with coverage
-pytest --cov=lab_instrument_library --cov-report=html
+pytest --cov=pylabinstruments --cov-report=html
 
 # Run specific test file
 pytest tests/test_multimeter_factory.py -v
@@ -246,8 +246,8 @@ Ruff configuration lives in `pyproject.toml`. The hook auto-fixes where possible
 ### Project Structure
 
 ```
-lab-instrument-library/
-├── lab_instrument_library/   # Main package
+pylabinstruments/
+├── pylabinstruments/   # Main package
 │   ├── multimeter.py         # Multimeter implementations
 │   ├── smu.py                # SMU implementations
 │   ├── oscilloscope.py       # Oscilloscope implementations
@@ -279,7 +279,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 📚 **Full API Documentation**: [Coming soon]
 - 💡 **More Examples**: See the [`examples/`](examples/) directory
-- 🐛 **Issues & Bugs**: [GitHub Issues](https://github.com/rothenbergt/lab-instrument-library/issues)
+- 🐛 **Issues & Bugs**: [GitHub Issues](https://github.com/rothenbergt/pylabinstruments/issues)
 
 ---
 

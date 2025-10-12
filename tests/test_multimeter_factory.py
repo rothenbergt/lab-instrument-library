@@ -15,7 +15,7 @@ import pytest
     ],
 )
 def test_multimeter_factory_detects_models(mock_visa, idn, expected_class_name):
-    from lab_instrument_library import Multimeter
+    from pylabinstruments import Multimeter
     from tests.mocks.mock_visa import MockResource
 
     # Create resource with specific IDN
@@ -28,7 +28,7 @@ def test_multimeter_factory_detects_models(mock_visa, idn, expected_class_name):
 
 
 def test_multimeter_factory_model_override(mock_visa):
-    from lab_instrument_library import Multimeter
+    from pylabinstruments import Multimeter
     from tests.mocks.mock_visa import MockResource
 
     # Unknown IDN but override should select class

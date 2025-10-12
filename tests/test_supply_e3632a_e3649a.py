@@ -4,7 +4,7 @@ Tests for Agilent E3632A and Keysight E3649A supplies.
 
 
 def test_e3632a_set_voltage_and_output(mock_visa):
-    from lab_instrument_library import Supply
+    from pylabinstruments import Supply
     from tests.mocks.mock_visa import MockResource
 
     responses = {"*IDN?": "AGILENT,E3632A,12345,1.0"}
@@ -28,7 +28,7 @@ def test_e3632a_set_voltage_and_output(mock_visa):
 
 
 def test_e3649a_channel_selection_and_limits(mock_visa):
-    from lab_instrument_library import Supply
+    from pylabinstruments import Supply
     from tests.mocks.mock_visa import MockResource
 
     responses = {"*IDN?": "KEYSIGHT,E3649A,12345,1.0"}

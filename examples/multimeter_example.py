@@ -7,7 +7,7 @@ and how to handle different measurement commands.
 
 import time
 
-from lab_instrument_library import Multimeter
+from pylabinstruments import Multimeter
 
 
 def main():

@@ -15,7 +15,7 @@ Thank you for considering contributing to the Lab Instrument Library! This docum
 
 When adding support for a new instrument:
 
-1. Create a new module in the `lab_instrument_library` directory named after the instrument type
+1. Create a new module in the `pylabinstruments` directory named after the instrument type
 2. Inherit from `LibraryTemplate` to ensure consistent API
 3. Implement standard methods like `__init__`, `reset`, and `close`
 4. Add comprehensive docstrings for all public methods

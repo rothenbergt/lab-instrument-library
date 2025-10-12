@@ -4,7 +4,7 @@ Tests for Keysight E36300 series supply via Supply factory.
 
 
 def test_e36300_basic_channel_control(mock_visa):
-    from lab_instrument_library import Supply
+    from pylabinstruments import Supply
     from tests.mocks.mock_visa import MockResource
 
     # Create resource with generic IDN (model is provided explicitly)

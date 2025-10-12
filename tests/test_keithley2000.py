@@ -9,13 +9,13 @@ import pytest
 
 
 def test_keithley2000_exists():
-    import lab_instrument_library
+    import pylabinstruments
 
-    assert hasattr(lab_instrument_library, "Keithley2000")
+    assert hasattr(pylabinstruments, "Keithley2000")
 
 
 def test_keithley2000_init_and_basic_measurements(mock_visa):
-    from lab_instrument_library import Keithley2000
+    from pylabinstruments import Keithley2000
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -39,7 +39,7 @@ def test_keithley2000_init_and_basic_measurements(mock_visa):
 
 
 def test_keithley2000_read_override(mock_visa):
-    from lab_instrument_library import Keithley2000
+    from pylabinstruments import Keithley2000
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -59,7 +59,7 @@ def test_keithley2000_read_override(mock_visa):
 
 
 def test_keithley2000_filter(mock_visa):
-    from lab_instrument_library import Keithley2000
+    from pylabinstruments import Keithley2000
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -82,7 +82,7 @@ def test_keithley2000_filter(mock_visa):
 
 
 def test_keithley2000_thermocouple(mock_visa):
-    from lab_instrument_library import Keithley2000
+    from pylabinstruments import Keithley2000
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -102,7 +102,7 @@ def test_keithley2000_thermocouple(mock_visa):
 
 
 def test_keithley2000_nplc(mock_visa):
-    from lab_instrument_library import Keithley2000
+    from pylabinstruments import Keithley2000
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -132,7 +132,7 @@ def test_keithley2000_nplc(mock_visa):
 
 
 def test_keithley2000_validation(mock_visa):
-    from lab_instrument_library import Keithley2000
+    from pylabinstruments import Keithley2000
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 

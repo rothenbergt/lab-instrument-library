@@ -1,5 +1,5 @@
 """
-Unit tests for utility functions in lab_instrument_library.utils.utilities
+Unit tests for utility functions in pylabinstruments.utils.utilities
 """
 
 import os
@@ -7,7 +7,7 @@ import re
 
 import pytest
 
-from lab_instrument_library.utils.utilities import (
+from pylabinstruments.utils.utilities import (
     create_run_folder,
     format_bytes,
     is_valid_ip,

@@ -4,7 +4,7 @@ Tests for SMU helpers (Keysight B2902A).
 
 
 def test_smu_configure_output_and_compliance(mock_visa):
-    from lab_instrument_library import SMU
+    from pylabinstruments import SMU
     from tests.mocks.mock_visa import MockResource
 
     responses = {
@@ -36,7 +36,7 @@ def test_smu_configure_output_and_compliance(mock_visa):
 
 
 def test_smu_ramp_voltage(mock_visa):
-    from lab_instrument_library import SMU
+    from pylabinstruments import SMU
     from tests.mocks.mock_visa import MockResource
 
     responses = {

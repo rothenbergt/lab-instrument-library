@@ -10,13 +10,13 @@ import pytest
 
 
 def test_tektronix_dmm4050_exists():
-    import lab_instrument_library
+    import pylabinstruments
 
-    assert hasattr(lab_instrument_library, "TektronixDMM4050")
+    assert hasattr(pylabinstruments, "TektronixDMM4050")
 
 
 def test_tektronix_dmm4050_init_and_basic_measurements(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -37,7 +37,7 @@ def test_tektronix_dmm4050_init_and_basic_measurements(mock_visa):
 
 
 def test_tektronix_dmm4050_dual_display(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -64,7 +64,7 @@ def test_tektronix_dmm4050_dual_display(mock_visa):
 
 
 def test_tektronix_dmm4050_read_dual_display(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -86,7 +86,7 @@ def test_tektronix_dmm4050_read_dual_display(mock_visa):
 
 
 def test_tektronix_dmm4050_temperature_reference_junction(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -117,7 +117,7 @@ def test_tektronix_dmm4050_temperature_reference_junction(mock_visa):
 
 
 def test_tektronix_dmm4050_validation(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -133,7 +133,7 @@ def test_tektronix_dmm4050_validation(mock_visa):
 
 
 def test_tektronix_dmm4050_range_and_autorange(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -155,7 +155,7 @@ def test_tektronix_dmm4050_range_and_autorange(mock_visa):
 
 
 def test_tektronix_dmm4050_fetch_and_trigger(mock_visa):
-    from lab_instrument_library import TektronixDMM4050
+    from pylabinstruments import TektronixDMM4050
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 

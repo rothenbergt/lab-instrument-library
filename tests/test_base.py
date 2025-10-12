@@ -11,7 +11,7 @@ import pytest
 def test_library_template_init(mock_visa):
     """Test that LibraryTemplate can be initialized."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Initialize a LibraryTemplate instance
         template = LibraryTemplate("GPIB0::22::INSTR")
@@ -21,13 +21,13 @@ def test_library_template_init(mock_visa):
         assert template.instrumentID == "Mock Instrument,Model 123,SN123456,FW1.0"
         assert template.connection is not None
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_write(mock_visa):
     """Test that LibraryTemplate.write works."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Initialize a LibraryTemplate instance
         template = LibraryTemplate("GPIB0::22::INSTR")
@@ -39,13 +39,13 @@ def test_library_template_write(mock_visa):
         assert mock_visa.resources["GPIB0::22::INSTR"].last_command == "TEST:COMMAND"
         assert "TEST:COMMAND" in mock_visa.resources["GPIB0::22::INSTR"].command_log
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_query(mock_visa):
     """Test that LibraryTemplate.query works."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Add a specific response for our test command
         mock_visa.resources["GPIB0::22::INSTR"].responses["TEST:QUERY?"] = "TEST_RESPONSE"
@@ -59,13 +59,13 @@ def test_library_template_query(mock_visa):
         # Check that the response is correct
         assert response == "TEST_RESPONSE"
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_identify(mock_visa):
     """Test that LibraryTemplate.identify works."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Initialize a LibraryTemplate instance
         template = LibraryTemplate("GPIB0::22::INSTR", identify=False)
@@ -77,13 +77,13 @@ def test_library_template_identify(mock_visa):
         assert identifier == "Mock Instrument,Model 123,SN123456,FW1.0"
         assert template.instrumentID == "Mock Instrument,Model 123,SN123456,FW1.0"
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_reset(mock_visa):
     """Test that LibraryTemplate.reset works."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Initialize a LibraryTemplate instance
         template = LibraryTemplate("GPIB0::22::INSTR")
@@ -95,13 +95,13 @@ def test_library_template_reset(mock_visa):
         assert result is True
         assert "*RST" in mock_visa.resources["GPIB0::22::INSTR"].command_log
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_clear(mock_visa):
     """Test that LibraryTemplate.clear works."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Initialize a LibraryTemplate instance
         template = LibraryTemplate("GPIB0::22::INSTR")
@@ -113,13 +113,13 @@ def test_library_template_clear(mock_visa):
         assert result is True
         assert "*CLS" in mock_visa.resources["GPIB0::22::INSTR"].command_log
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_error_handling(mock_visa):
     """Test that LibraryTemplate handles errors properly."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # First initialize the library template normally
         template = LibraryTemplate("GPIB0::22::INSTR")
@@ -134,13 +134,13 @@ def test_library_template_error_handling(mock_visa):
         result = template.write("TEST:COMMAND")
         assert result is None
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_close(mock_visa):
     """Test that LibraryTemplate.close works."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Initialize a LibraryTemplate instance
         template = LibraryTemplate("GPIB0::22::INSTR")
@@ -151,13 +151,13 @@ def test_library_template_close(mock_visa):
         # Check that the connection was closed
         assert mock_visa.resources["GPIB0::22::INSTR"].closed is True
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")
 
 
 def test_library_template_context_manager(mock_visa):
     """Test that LibraryTemplate works as a context manager."""
     try:
-        from lab_instrument_library.base import LibraryTemplate
+        from pylabinstruments.base import LibraryTemplate
 
         # Use LibraryTemplate as a context manager
         with LibraryTemplate("GPIB0::22::INSTR") as template:
@@ -171,4 +171,4 @@ def test_library_template_context_manager(mock_visa):
         # Check that the connection was closed
         assert mock_visa.resources["GPIB0::22::INSTR"].closed is True
     except ImportError:
-        pytest.skip("lab_instrument_library.base.LibraryTemplate not available")
+        pytest.skip("pylabinstruments.base.LibraryTemplate not available")

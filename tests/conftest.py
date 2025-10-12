@@ -71,24 +71,24 @@ def mock_multimeter(mock_visa, model="HP34401A"):
     # Import specific multimeter classes
     try:
         if model == "HP34401A":
-            from lab_instrument_library import HP34401A
+            from pylabinstruments import HP34401A
 
             multimeter = HP34401A("GPIB0::22::INSTR")
         elif model == "KEITHLEY2000":
-            from lab_instrument_library import Keithley2000
+            from pylabinstruments import Keithley2000
 
             multimeter = Keithley2000("GPIB0::22::INSTR")
         elif model == "KEITHLEY2110":
-            from lab_instrument_library import Keithley2110
+            from pylabinstruments import Keithley2110
 
             multimeter = Keithley2110("GPIB0::22::INSTR")
         elif model == "TEKTRONIXDMM4050":
-            from lab_instrument_library import TektronixDMM4050
+            from pylabinstruments import TektronixDMM4050
 
             multimeter = TektronixDMM4050("GPIB0::22::INSTR")
         else:
             # Default to HP34401A if model not specified or recognized
-            from lab_instrument_library import HP34401A
+            from pylabinstruments import HP34401A
 
             multimeter = HP34401A("GPIB0::22::INSTR")
 
@@ -136,13 +136,13 @@ def mock_oscilloscope(mock_visa):
 
     # Import the oscilloscope class
     try:
-        from lab_instrument_library import Oscilloscope
+        from pylabinstruments import Oscilloscope
 
         # Create an oscilloscope instance that uses our mock
         oscilloscope = Oscilloscope("GPIB0::23::INSTR")
         return oscilloscope
     except ImportError:
-        pytest.skip("lab_instrument_library.Oscilloscope not available")
+        pytest.skip("pylabinstruments.Oscilloscope not available")
 
 
 @pytest.fixture
@@ -174,13 +174,13 @@ def mock_function_generator(mock_visa):
 
     # Import the function generator class
     try:
-        from lab_instrument_library import AFG3000
+        from pylabinstruments import AFG3000
 
         # Create a function generator instance that uses our mock
         fg = AFG3000("GPIB0::24::INSTR")
         return fg
     except ImportError:
-        pytest.skip("lab_instrument_library.AFG3000 not available")
+        pytest.skip("pylabinstruments.AFG3000 not available")
 
 
 @pytest.fixture
@@ -214,13 +214,13 @@ def mock_smu(mock_visa):
 
     # Import the SMU class
     try:
-        from lab_instrument_library import SMU
+        from pylabinstruments import SMU
 
         # Create an SMU instance that uses our mock
         smu = SMU("GPIB0::25::INSTR")
         return smu
     except ImportError:
-        pytest.skip("lab_instrument_library.SMU not available")
+        pytest.skip("pylabinstruments.SMU not available")
 
 
 @pytest.fixture
@@ -255,13 +255,13 @@ def mock_power_supply(mock_visa):
 
     # Import the Supply class
     try:
-        from lab_instrument_library import Supply
+        from pylabinstruments import Supply
 
         # Create a Supply instance that uses our mock
         supply = Supply("GPIB0::26::INSTR")
         return supply
     except ImportError:
-        pytest.skip("lab_instrument_library.Supply not available")
+        pytest.skip("pylabinstruments.Supply not available")
 
 
 @pytest.fixture
@@ -286,9 +286,9 @@ def mock_network_analyzer(mock_visa):
     mock_visa.resources["GPIB0::27::INSTR"] = mock_resource
 
     try:
-        from lab_instrument_library import NetworkAnalyzer
+        from pylabinstruments import NetworkAnalyzer
 
         vna = NetworkAnalyzer("GPIB0::27::INSTR")
         return vna
     except ImportError:
-        pytest.skip("lab_instrument_library.NetworkAnalyzer not available")
+        pytest.skip("pylabinstruments.NetworkAnalyzer not available")

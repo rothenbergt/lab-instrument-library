@@ -7,7 +7,7 @@ and make measurements.
 
 import time
 
-from lab_instrument_library import Supply
+from pylabinstruments import Supply
 
 
 def main():

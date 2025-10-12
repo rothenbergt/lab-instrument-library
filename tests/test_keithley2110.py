@@ -10,13 +10,13 @@ import pytest
 
 
 def test_keithley2110_exists():
-    import lab_instrument_library
+    import pylabinstruments
 
-    assert hasattr(lab_instrument_library, "Keithley2110")
+    assert hasattr(pylabinstruments, "Keithley2110")
 
 
 def test_keithley2110_init_and_basic_measurements(mock_visa):
-    from lab_instrument_library import Keithley2110
+    from pylabinstruments import Keithley2110
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -40,7 +40,7 @@ def test_keithley2110_init_and_basic_measurements(mock_visa):
 
 
 def test_keithley2110_filter(mock_visa):
-    from lab_instrument_library import Keithley2110
+    from pylabinstruments import Keithley2110
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -63,7 +63,7 @@ def test_keithley2110_filter(mock_visa):
 
 
 def test_keithley2110_thermocouple(mock_visa):
-    from lab_instrument_library import Keithley2110
+    from pylabinstruments import Keithley2110
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -83,7 +83,7 @@ def test_keithley2110_thermocouple(mock_visa):
 
 
 def test_keithley2110_temperature_unit(mock_visa):
-    from lab_instrument_library import Keithley2110
+    from pylabinstruments import Keithley2110
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -111,7 +111,7 @@ def test_keithley2110_temperature_unit(mock_visa):
 
 
 def test_keithley2110_nplc(mock_visa):
-    from lab_instrument_library import Keithley2110
+    from pylabinstruments import Keithley2110
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 
@@ -141,7 +141,7 @@ def test_keithley2110_nplc(mock_visa):
 
 
 def test_keithley2110_validation(mock_visa):
-    from lab_instrument_library import Keithley2110
+    from pylabinstruments import Keithley2110
     from tests.mocks.mock_visa import MockResource
     from tests.mocks.responses.multimeter_responses import MULTIMETER_RESPONSES
 

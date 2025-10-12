@@ -7,7 +7,7 @@ configure it, capture a waveform, and save a screenshot.
 
 import matplotlib.pyplot as plt
 
-from lab_instrument_library.oscilloscope import TektronixTDS2000
+from pylabinstruments.oscilloscope import TektronixTDS2000
 
 
 def main():
