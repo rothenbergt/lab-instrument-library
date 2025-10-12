@@ -1,9 +1,12 @@
 # Lab Instrument Library
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/pylabinstruments.svg)](https://pypi.org/project/pylabinstruments/)
+[![Python 3.10+](https://img.shields.io/pypi/pyversions/pylabinstruments.svg)](https://pypi.org/project/pylabinstruments/)
+[![Downloads](https://img.shields.io/pypi/dm/pylabinstruments.svg)](https://pypi.org/project/pylabinstruments/)
+[![License: MIT](https://img.shields.io/pypi/l/pylabinstruments.svg)](https://github.com/rothenbergt/pylabinstruments/blob/main/LICENSE)
 [![CI](https://github.com/rothenbergt/pylabinstruments/actions/workflows/ci.yml/badge.svg)](https://github.com/rothenbergt/pylabinstruments/actions)
 [![codecov](https://codecov.io/gh/rothenbergt/pylabinstruments/branch/main/graph/badge.svg)](https://codecov.io/gh/rothenbergt/pylabinstruments)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 A Python library for interfacing with laboratory instruments through GPIB/VISA connections. Control multimeters, oscilloscopes, power supplies, SMUs, and more with a unified, Pythonic API.
 
@@ -75,18 +78,23 @@ dmm.close()
 
 ## Installation
 
+### From PyPI (Recommended)
+
+```bash
+pip install pylabinstruments
+
+# Optional: Install with GUI utilities
+pip install pylabinstruments[gui]
+```
+
+### From Source (Development)
+
 ```bash
 # Clone the repository
 git clone https://github.com/rothenbergt/pylabinstruments.git
 cd pylabinstruments
 
 # Install in development mode
-pip install -e .
-
-# Optional: Install with GUI utilities
-pip install -e ".[gui]"
-
-# Optional: Install with development tools
 pip install -e ".[dev]"
 ```
 
