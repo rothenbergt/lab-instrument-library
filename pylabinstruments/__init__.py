@@ -24,7 +24,7 @@ TemperatureSensor
     Interface for temperature measurement devices (thermocouples, thermometers)
 Thermonics
     Interface for temperature forcing systems
-KeithlySMU
+KeithleySMU
     Interface for Keithley SMU models 228 and 238
 """
 
@@ -36,8 +36,8 @@ import logging
 # Re-export base class
 from .base import LibraryTemplate as LibraryTemplate
 from .function_generator import AFG3000 as AFG3000
-from .keithly_smu import Keithly228 as Keithly228
-from .keithly_smu import Keithly238 as Keithly238
+from .keithley_smu import Keithley228 as Keithley228
+from .keithley_smu import Keithley238 as Keithley238
 
 # Re-export instrument classes
 from .multimeter import (

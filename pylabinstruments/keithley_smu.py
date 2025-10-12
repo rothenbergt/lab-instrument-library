@@ -28,10 +28,10 @@ from .utils.decorators import parameter_validator, visa_exception_handler
 logger = logging.getLogger(__name__)
 
 # Type variable for the Keithley classes
-T = TypeVar('T', bound='KeithlyBaseSMU')
+T = TypeVar('T', bound='KeithleyBaseSMU')
 
 
-class KeithlyBaseSMU(LibraryTemplate, ABC):
+class KeithleyBaseSMU(LibraryTemplate, ABC):
     """Base class for Keithley Source Measure Units.
 
     This abstract base class provides common functionality for different Keithley SMU models.
@@ -71,7 +71,7 @@ class KeithlyBaseSMU(LibraryTemplate, ABC):
         # Set longer timeout for some operations
         self.connection.timeout = 10000
 
-    @parameter_validator(voltage=lambda v: abs(v) <= KeithlyBaseSMU.MAX_VOLTAGE)
+    @parameter_validator(voltage=lambda v: abs(v) <= KeithleyBaseSMU.MAX_VOLTAGE)
     @visa_exception_handler(default_return_value=None, module_logger=logger)
     def set_voltage(self, voltage: float) -> None:
         """Set the output voltage of the SMU.
@@ -85,7 +85,7 @@ class KeithlyBaseSMU(LibraryTemplate, ABC):
         logger.debug(f"Setting voltage to {voltage}V")
         self.write(f"SOUR:VOLT {voltage}")
 
-    @parameter_validator(current=lambda i: abs(i) <= KeithlyBaseSMU.MAX_CURRENT)
+    @parameter_validator(current=lambda i: abs(i) <= KeithleyBaseSMU.MAX_CURRENT)
     @visa_exception_handler(default_return_value=None, module_logger=logger)
     def set_current(self, current: float) -> None:
         """Set the output current of the SMU.
@@ -177,8 +177,8 @@ class KeithlyBaseSMU(LibraryTemplate, ABC):
         super().close_connection()
 
     @parameter_validator(
-        start=lambda v: abs(v) <= KeithlyBaseSMU.MAX_VOLTAGE,
-        stop=lambda v: abs(v) <= KeithlyBaseSMU.MAX_VOLTAGE,
+        start=lambda v: abs(v) <= KeithleyBaseSMU.MAX_VOLTAGE,
+        stop=lambda v: abs(v) <= KeithleyBaseSMU.MAX_VOLTAGE,
         steps=lambda s: s > 0,
         compliance=lambda c: c > 0,
         delay=lambda d: d >= 0,
@@ -303,7 +303,7 @@ class KeithlyBaseSMU(LibraryTemplate, ABC):
         return f"{self.__class__.__name__} at {self.instrument_address} ({self.instrumentID if self.instrumentID else 'Not identified'})"
 
 
-class Keithly228(KeithlyBaseSMU):
+class Keithley228(KeithleyBaseSMU):
     """Class for interfacing with Keithley 228 Source Measure Unit.
 
     This class provides methods for basic source and measurement operations
@@ -368,7 +368,7 @@ class Keithly228(KeithlyBaseSMU):
         logger.debug(f"Set {mode} auto-range to {'ON' if state else 'OFF'}")
 
 
-class Keithly238(KeithlyBaseSMU):
+class Keithley238(KeithleyBaseSMU):
     """Class for interfacing with Keithley 238 Source Measure Unit.
 
     This class provides methods for basic source and measurement operations
@@ -431,8 +431,8 @@ class Keithly238(KeithlyBaseSMU):
         logger.debug(f"Configured filter: mode={mode}, count={count}")
 
     @parameter_validator(
-        start=lambda v: abs(v) <= Keithly238.MAX_VOLTAGE,
-        stop=lambda v: abs(v) <= Keithly238.MAX_VOLTAGE,
+        start=lambda v: abs(v) <= Keithley238.MAX_VOLTAGE,
+        stop=lambda v: abs(v) <= Keithley238.MAX_VOLTAGE,
         steps=lambda s: s > 0,
     )
     @visa_exception_handler(default_return_value=None, module_logger=logger, retry_count=1)
